@@ -3,6 +3,7 @@ import re
 from markdown import markdown
 
 from knowledge_rich import get_catalog as _get_catalog, get_pages as _get_pages, build_page as _build_page
+from knowledge_fullpack import get_topic_pack
 from knowledge_curated_extra import EXTRA_CURATED
 from knowledge_source_core import SOURCE_MD
 from knowledge_examples import EXAMPLES
@@ -64,20 +65,31 @@ def build_page(module, page_id):
     page = _build_page(module, page_id)
     title = page['title']
 
-    # Page-specific integrated method comes after the user's source notes, not instead of them.
+    # Layer 1: every one of the 300 nodes gets topic-specific content.
+    pack = get_topic_pack(module, title)
+    if pack:
+        page['definition'] = pack['essence']
+        page['main_method'] = pack['method']
+        page['boundary'] = pack['pitfall']
+        page['formula'] = pack.get('formula', '')
+        page['memory'] = pack.get('memory', '')
+        # If the base page only has generic fast-path language, replace it with a useful exam-oriented rule.
+        if pack.get('memory'):
+            page['fast_method'] = [pack['memory'], '先用选项和题干结构做排除；只有无法区分时再进入完整计算/推理。']
+        page['curated_status'] = '已完成逐页专题内容'
+
+    # Layer 2: selected high-frequency pages get a deeper manual synthesis.
     extra = EXTRA_CURATED.get((module, title))
     if extra:
         page.update(extra)
-        page['curated_status'] = '已完成专题级精编'
-    else:
-        page['curated_status'] = '已接入来源内容；专题级精编持续补强'
+        page['curated_status'] = '已完成高频专题深度精编'
 
-    # Add classic models / worked micro-example when this page has finished content treatment.
+    # Layer 3: classic models / worked micro-example.
     example = EXAMPLES.get((module, title))
     if example:
         page.update(example)
 
-    # Prefer verified excerpts from the user's original full notes captured during rebuild.
+    # Source notes come before the AI synthesis in the reader.
     source = SOURCE_MD.get((module, title), '')
     if not source:
         source = page.get('source_markdown') or _parent_excerpt(module, title)
@@ -89,6 +101,6 @@ def build_page(module, page_id):
     else:
         page['source_markdown'] = ''
         page['source_html'] = ''
-        page['source_status'] = '当前节点无直接个人旧笔记；使用综合方法并等待真题补强'
+        page['source_status'] = '当前节点无直接个人旧笔记；展示逐页综合内容'
 
     return page
