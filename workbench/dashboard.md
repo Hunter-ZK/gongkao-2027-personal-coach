@@ -73,25 +73,29 @@
 
 - [x] GitHub 私有仓库已连接
 - [x] 工作台 Dashboard
-- [x] 当前阶段状态
-- [x] 每日计划目录
-- [x] 训练数据库 `data/training-log.csv`
+- [x] 全流程运行手册 `workbench/service-runbook.md`
+- [x] 当前阶段状态 `progress/current_state.md`
+- [x] 每日计划目录 `plans/daily/`
+- [x] 训练主表 `data/training-log.csv`
+- [x] 逐题记录表 `data/question-log.csv`
+- [x] 每日进度表 `data/daily-progress.csv`
 - [x] 错误模式库 `data/error-patterns.csv`
 - [x] 候选方法库 `data/methods.csv`
 - [x] 外部研究库 `data/research-log.csv`
 - [x] 单次训练标准化记录 `records/`
-- [ ] 历史 Skill 配套文档完整镜像
-- [ ] 历史行测笔记完整镜像
-- [ ] 周复盘模板与个人方法论正式库
-- [ ] 申论表达库与申论训练记录区
-- [ ] 原始附件二进制归档自动化（当前先保留规范化记录）
+- [x] 周复盘框架 `reviews/weekly/`
+- [x] 个人正式方法论库 `progress/personal-methodology.md`
+- [x] 申论表达库 `progress/shenlun-expression-bank.md`
+- [x] 核心 Skill 配套规则：规划/行测/申论/错题/方法论/研究/来源/考试画像/工作台
+- [~] 历史行测笔记镜像：索引已建，资料分析已完成仓库恢复版；其余历史笔记继续补齐
+- [~] 原始附件归档：当前会话PDF已建立证据索引+逐题标准化记录；二进制原件暂未直接写入GitHub
 
 ## 6. 工作台运行规则
 
 以后用户只需要做两类输入：
 
-1. **发训练结果**：截图/PDF/成绩页即可；AI负责提取、拆模块、入库、更新错误模式、更新Dashboard和下一任务。
-2. **说“收工”**：AI负责生成当日复盘、更新完成率、确定次日P0/P1/P2。
+1. **发训练结果**：截图/PDF/成绩页即可；AI负责提取、拆模块、逐题入库、更新错误模式、更新方法状态、更新Dashboard和下一任务。
+2. **说“收工”**：AI负责生成当日复盘、更新完成率、确定次日P0/P1/P2，并写入仓库。
 
 除非源文件确实缺失关键字段，否则不要求用户重复手工录入题号、分数或错题。
 
