@@ -17,93 +17,22 @@
       <button class="nav" data-view="plan"><i>◎</i><span>备考进度</span></button>
       <button class="nav" data-view="sources"><i>◇</i><span>名师笔记</span></button>
     </nav>
-    <div class="sidebar-bottom">
-      <div class="exam-pill"><small>当前阶段</small><strong>系统恢复 · Day 1</strong></div>
-      <div class="sync">● GitHub 已同步</div>
-    </div>
+    <div class="sidebar-bottom"><div class="exam-pill"><small>当前阶段</small><strong>系统恢复 · Day 1</strong></div><div class="sync">● GitHub 已同步</div></div>
   </aside>
-
   <main class="main">
-    <header class="topbar">
-      <div><p class="kicker">PERSONAL EXAM OS</p><h1 id="title">今日工作台</h1></div>
-      <div class="actions"><div class="search">⌕ <input id="search" placeholder="搜索题型 / 技巧 / 错题"></div><button class="ghost">2026.09.13</button></div>
-    </header>
-
+    <header class="topbar"><div><p class="kicker">PERSONAL EXAM OS</p><h1 id="title">今日工作台</h1></div><div class="actions"><div class="search">⌕ <input id="search" placeholder="搜索题型 / 技巧 / 错题"></div><button class="ghost">2026.09.13</button></div></header>
     <section id="home" class="view active">
-      <div class="welcome">
-        <div>
-          <span class="badge">DAY 1 · SYSTEM RECOVERY</span>
-          <h2>先恢复完整题型地图，再进入整卷。</h2>
-          <p>今天已完成 2 组练习。当前重点不是继续随机刷题，而是恢复资料分析与判断推理的完整方法体系，并把错题转成可复训的模型。</p>
-          <div class="welcome-actions"><button class="primary" data-jump="atlas">继续恢复知识树</button><button class="secondary" data-jump="mistakes">开始错题复训</button></div>
-        </div>
-        <div class="ring-card"><div class="ring"><span>80%</span></div><small>Day 1 累计正确率</small><b>24 / 30</b></div>
-      </div>
-
-      <div class="metrics">
-        <div class="metric"><span>累计训练</span><b>30</b><small>题 · 约 41 分钟</small></div>
-        <div class="metric"><span>待复训错题</span><b>6</b><small>5 个观察 · 1 个改善</small></div>
-        <div class="metric"><span>恢复完成度</span><b>18%</b><small>六模块第一轮</small></div>
-        <div class="metric"><span>下一里程碑</span><b>90</b><small>分钟广东整卷</small></div>
-      </div>
-
-      <div class="dashboard-grid">
-        <div class="card span2">
-          <div class="card-head"><div><span class="eyebrow">TODAY</span><h3>今日学习路径</h3></div><span class="subtle">按实际完成动态调整</span></div>
-          <div id="today-path" class="today-path"></div>
-        </div>
-        <div class="card">
-          <div class="card-head"><div><span class="eyebrow">MASTERY</span><h3>模块掌握度</h3></div></div>
-          <div id="mastery" class="mastery"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><div><span class="eyebrow">RETRAIN</span><h3>最该重新做的题</h3></div><button class="link" data-jump="mistakes">全部错题 →</button></div>
-          <div id="priority-mistakes"></div>
-        </div>
-        <div class="card span2">
-          <div class="card-head"><div><span class="eyebrow">RECENT</span><h3>最近训练</h3></div><button class="link" data-jump="practice">训练记录 →</button></div>
-          <div id="recent-trainings" class="recent-trainings"></div>
-        </div>
-      </div>
+      <div class="welcome"><div><span class="badge">DAY 1 · SYSTEM RECOVERY</span><h2>先恢复完整题型地图，再进入整卷。</h2><p>今天已完成 2 组练习。当前重点不是继续随机刷题，而是恢复资料分析与判断推理的完整方法体系，并把错题转成可复训的模型。</p><div class="welcome-actions"><button class="primary" data-jump="atlas">继续恢复知识树</button><button class="secondary" data-jump="mistakes">开始错题复训</button></div></div><div class="ring-card"><div class="ring"><span>80%</span></div><small>Day 1 累计正确率</small><b>24 / 30</b></div></div>
+      <div class="metrics"><div class="metric"><span>累计训练</span><b>30</b><small>题 · 约 41 分钟</small></div><div class="metric"><span>待复训错题</span><b>6</b><small>5 个观察 · 1 个改善</small></div><div class="metric"><span>恢复完成度</span><b>18%</b><small>六模块第一轮</small></div><div class="metric"><span>下一里程碑</span><b>90</b><small>分钟广东整卷</small></div></div>
+      <div class="dashboard-grid"><div class="card span2"><div class="card-head"><div><span class="eyebrow">TODAY</span><h3>今日学习路径</h3></div><span class="subtle">按实际完成动态调整</span></div><div id="today-path" class="today-path"></div></div><div class="card"><div class="card-head"><div><span class="eyebrow">MASTERY</span><h3>模块掌握度</h3></div></div><div id="mastery" class="mastery"></div></div><div class="card"><div class="card-head"><div><span class="eyebrow">RETRAIN</span><h3>最该重新做的题</h3></div><button class="link" data-jump="mistakes">全部错题 →</button></div><div id="priority-mistakes"></div></div><div class="card span2"><div class="card-head"><div><span class="eyebrow">RECENT</span><h3>最近训练</h3></div><button class="link" data-jump="practice">训练记录 →</button></div><div id="recent-trainings" class="recent-trainings"></div></div></div>
     </section>
-
-    <section id="atlas" class="view">
-      <div class="page-intro"><div><span class="eyebrow">KNOWLEDGE ATLAS</span><h2>行测题型知识树</h2><p>不是“笔记文章”，而是模块 → 大类 → 子题型 → 经典模型 → 技巧 → 名师观点 → 经典题/错题的一套检索体系。</p></div></div>
-      <div class="atlas-layout">
-        <div class="tree-panel">
-          <div class="tree-tabs" id="module-tabs"></div>
-          <div id="tree"></div>
-        </div>
-        <div class="detail-panel" id="topic-detail"></div>
-      </div>
-    </section>
-
-    <section id="mistakes" class="view">
-      <div class="page-intro"><div><span class="eyebrow">RETRAIN CENTER</span><h2>错题复训中心</h2><p>每一道错题都保留题目、你的答案、正确答案、错因、技巧卡和复训入口；一次错题不等于长期弱项。</p></div>
-      <div class="segmented" id="mistake-filter"><button class="active" data-filter="all">全部 6</button><button data-filter="观察">观察 5</button><button data-filter="改善">改善 1</button></div></div>
-      <div id="mistake-cards" class="mistake-grid"></div>
-    </section>
-
-    <section id="practice" class="view">
-      <div class="page-intro"><div><span class="eyebrow">PRACTICE LOG</span><h2>训练记录</h2><p>只展示对备考有决策价值的数据：题量、正确率、模块表现、耗时、错题结构和复训状态。</p></div></div>
-      <div id="practice-summary" class="metrics compact"></div>
-      <div id="practice-list" class="practice-list"></div>
-    </section>
-
-    <section id="plan" class="view">
-      <div class="page-intro"><div><span class="eyebrow">ROADMAP</span><h2>备考进度地图</h2><p>用里程碑和完成条件展示进度，不用抽象“阶段名称”替代真实学习任务。</p></div></div>
-      <div id="roadmap" class="roadmap"></div>
-      <div class="card"><div class="card-head"><div><span class="eyebrow">THIS WEEK</span><h3>本周能力建设</h3></div></div><div id="week-board" class="week-board"></div></div>
-    </section>
-
-    <section id="sources" class="view">
-      <div class="page-intro"><div><span class="eyebrow">TEACHER NOTES</span><h2>名师方法与交叉验证</h2><p>同一题型同时保存不同老师/机构的可执行观点，再由逻辑、真题和你的数据决定是否进入个人方法。</p></div></div>
-      <div id="source-list" class="source-grid"></div>
-    </section>
+    <section id="atlas" class="view"><div class="page-intro"><div><span class="eyebrow">KNOWLEDGE ATLAS</span><h2>行测题型知识树</h2><p>模块 → 一级题型 → 二级题型 → 经典模型 → 识别信号 → 技巧 → 名师观点 → 经典题/错题的一套检索体系。</p></div></div><div class="atlas-layout"><div class="tree-panel"><div class="tree-tabs" id="module-tabs"></div><div id="tree"></div></div><div class="detail-panel" id="topic-detail"></div></div></section>
+    <section id="mistakes" class="view"><div class="page-intro"><div><span class="eyebrow">RETRAIN CENTER</span><h2>错题复训中心</h2><p>每一道错题保留原题、答案、错因、AI解析、技巧卡和复训入口。</p></div><div class="segmented" id="mistake-filter"><button class="active" data-filter="all">全部 6</button><button data-filter="观察">观察 5</button><button data-filter="改善">改善 1</button></div></div><div id="mistake-cards" class="mistake-grid"></div></section>
+    <section id="practice" class="view"><div class="page-intro"><div><span class="eyebrow">PRACTICE LOG</span><h2>训练记录</h2><p>只展示对备考有决策价值的数据：题量、正确率、模块表现、耗时、错题结构和复训状态。</p></div></div><div id="practice-summary" class="metrics compact"></div><div id="practice-list" class="practice-list"></div></section>
+    <section id="plan" class="view"><div class="page-intro"><div><span class="eyebrow">ROADMAP</span><h2>备考进度地图</h2><p>用里程碑、完成条件和本周任务展示真实进度。</p></div></div><div id="roadmap" class="roadmap"></div><div class="card"><div class="card-head"><div><span class="eyebrow">THIS WEEK</span><h3>本周能力建设</h3></div></div><div id="week-board" class="week-board"></div></div></section>
+    <section id="sources" class="view"><div class="page-intro"><div><span class="eyebrow">TEACHER NOTES</span><h2>名师方法与交叉验证</h2><p>同一题型保存不同老师/机构的可执行观点，再由逻辑、真题和个人数据筛选。</p></div></div><div id="source-list" class="source-grid"></div></section>
   </main>
 </div>
-
 <div id="modal" class="modal"><div class="modal-backdrop" data-close></div><div class="modal-sheet"><button class="modal-close" data-close>×</button><div id="modal-content"></div></div></div>
-<script src="./data.js"></script><script src="./app.js"></script>
+<script src="./data.js"></script><script src="./knowledge.js"></script><script src="./app.js"></script>
 </body></html>
