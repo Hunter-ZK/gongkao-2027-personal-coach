@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2027 公考个人备考系统</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">考</div><div><b>个人备考中枢</b><small>高基础 · 数据驱动</small></div></div>
+    <nav>
+      <button class="nav active" data-page="dashboard">总览</button>
+      <button class="nav" data-page="timer">学习计时</button>
+      <button class="nav" data-page="knowledge">行测体系</button>
+      <button class="nav" data-page="mistakes">错题复训</button>
+      <button class="nav" data-page="training">训练记录</button>
+      <button class="nav" data-page="import">PDF 导入</button>
+      <button class="nav" data-page="plan">备考规划</button>
+    </nav>
+    <div class="sidebar-bottom"><small>本地运行 · SQLite</small><b id="healthText">连接中…</b></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar"><div><small id="eyebrow">2027 公考</small><h1 id="pageTitle">学习总览</h1></div><div class="top-actions"><span id="today"></span><button id="quickTimer" class="ghost">开始计时</button></div></header>
+
+    <section class="page active" id="dashboard">
+      <div class="hero">
+        <div><span class="hero-tag">Week 1 · 系统恢复</span><h2>先把完整方法体系重新装回脑中，<br>再用真题证明“会做且做得快”。</h2><p>首页只展示考试节点、学习产能、模块能力和下一步，不展示后台维护信息。</p></div>
+        <div class="hero-kpis"><div><span>累计训练</span><b id="kpiQuestions">30题</b></div><div><span>当前正确率</span><b id="kpiAccuracy">80.0%</b></div><div><span>今日有效学习</span><b id="kpiStudy">0m</b></div></div>
+      </div>
+      <div class="grid cols-4 summary-cards">
+        <article class="card"><span>距国考</span><b>待公告</b><small>作为高强度行测校准节点</small></article>
+        <article class="card"><span>距广东省考</span><b>待公告</b><small>第一目标：省直 / 深圳市直</small></article>
+        <article class="card"><span>本周目标</span><b>24–30h</b><small>先记录7–14天再校准</small></article>
+        <article class="card"><span>当前阶段</span><b>系统恢复</b><small>2周为初始上限</small></article>
+      </div>
+      <div class="grid cols-3">
+        <section class="panel span2"><div class="panel-head"><h3>模块能力</h3><small>正确率 + 样本量 + 掌握状态</small></div><div id="moduleGrid" class="module-grid"></div></section>
+        <section class="panel"><div class="panel-head"><h3>今天先做什么</h3></div><div class="task"><strong>资料分析 · 增长与比重</strong><small>知识恢复 30m → 回忆 10m → 12–15题 → 复盘 15m</small></div><div class="task"><strong>判断推理 · 逻辑判断</strong><small>翻译 / 真假 / 分析 / 加强削弱</small></div><div class="task"><strong>错题复训</strong><small>两期比重 / 加强论证</small></div></section>
+      </div>
+      <section class="panel"><div class="panel-head"><h3>阶段路线</h3><small>总体 → 细节</small></div><div class="roadmap"><div class="step current"><b>01 系统恢复</b><small>完整题型地图与主方法</small></div><div class="step"><b>02 分模块计时</b><small>正确率、速度、止损</small></div><div class="step"><b>03 广东整卷</b><small>90分钟时间结构</small></div><div class="step"><b>04 专项强化</b><small>只修复稳定弱项</small></div><div class="step"><b>05 国考整卷</b><small>120分钟高压校准</small></div></div></section>
+    </section>
+
+    <section class="page" id="timer">
+      <div class="page-intro"><h2>学习计时器</h2><p>单次 ≥30 分钟记为深度学习；15–29 分钟为专注学习；&lt;15 分钟为碎片学习。</p></div>
+      <div class="grid cols-3">
+        <section class="panel span2 timer-panel"><div class="form-row"><label>模块<select id="timerSubject"><option>资料分析</option><option>判断推理</option><option>言语理解</option><option>数量关系</option><option>广东科学推理</option><option>政治理论与常识</option><option>申论</option><option>错题复训</option></select></label><label>类型<select id="timerActivity"><option>知识恢复</option><option>刷题训练</option><option>错题复盘</option><option>真题/整卷</option><option>申论训练</option><option>课程/笔记</option></select></label></div><label>本次任务<input id="timerTask" placeholder="例如：资料分析 · ABRX + 比重"></label><div class="clock" id="clock">00:00:00</div><div class="clock-state" id="clockState">尚未开始</div><div class="timer-actions"><button class="primary" id="timerStart">开始</button><button class="secondary" id="timerPause" disabled>暂停</button><button class="danger" id="timerFinish" disabled>结束并记录</button></div></section>
+        <section class="panel"><div class="panel-head"><h3>今日统计</h3></div><div class="timer-stat"><span>总有效</span><b id="statTotal">0m</b></div><div class="timer-stat"><span>深度学习</span><b id="statDeep">0m</b></div><div class="timer-stat"><span>专注学习</span><b id="statFocus">0m</b></div><div class="timer-stat"><span>碎片学习</span><b id="statFragment">0m</b></div></section>
+      </div>
+      <section class="panel"><div class="panel-head"><h3>每日有效学习统计</h3></div><div class="table-wrap"><table><thead><tr><th>日期</th><th>总有效</th><th>深度</th><th>专注</th><th>碎片</th><th>次数</th><th>深度占比</th></tr></thead><tbody id="dailyStudyRows"></tbody></table></div></section>
+    </section>
+
+    <section class="page" id="knowledge">
+      <div class="page-intro"><h2>行测体系</h2><p>每个大专题固定 50 个独立学习页；按题型目录下钻，不再用一篇短笔记概括整个模块。</p></div>
+      <div class="knowledge-layout"><aside class="knowledge-nav"><div id="moduleTabs"></div><div id="pageList" class="page-list"></div></aside><article class="knowledge-reader" id="knowledgeReader"><div class="empty">选择一个专题页开始复习。</div></article></div>
+    </section>
+
+    <section class="page" id="mistakes">
+      <div class="page-intro"><h2>错题复训</h2><p>不是只看错因：直接进入答题界面，重新选择选项、计时、提交并记录复训结果。</p></div>
+      <div class="review-shell"><aside class="review-list" id="mistakeList"></aside><main class="review-main" id="reviewMain"><div class="empty">PDF 导入后，错题会自动进入这里。</div></main><aside class="answer-nav" id="answerNav"><h4>答题卡</h4></aside></div>
+    </section>
+
+    <section class="page" id="training"><div class="page-intro"><h2>训练记录</h2><p>粉笔随机练习、专项、国考真题、广东真题分开解释。</p></div><section class="panel"><div class="table-wrap"><table><thead><tr><th>ID</th><th>来源</th><th>文件</th><th>题量</th><th>正确</th><th>正确率</th><th>导入时间</th></tr></thead><tbody id="trainingRows"></tbody></table></div></section></section>
+
+    <section class="page" id="import">
+      <div class="page-intro"><h2>PDF 导入</h2><p>上传粉笔/训练记录 PDF → 本地解析 → 进入训练记录与错题本。低置信结果会提示人工复核，不会假装解析正确。</p></div>
+      <section class="upload-card" id="dropzone"><div class="upload-icon">PDF</div><h3>拖入 PDF 或点击选择</h3><p>文件仅保存在本机 local_app/data/uploads</p><input type="file" id="pdfInput" accept="application/pdf"><button class="primary" id="uploadBtn">选择并导入</button></section><section class="panel" id="importResult" style="display:none"></section>
+    </section>
+
+    <section class="page" id="plan"><div class="page-intro"><h2>备考规划</h2><p>战略目标、周计划和晋级标准分开展示。</p></div><div class="grid cols-2"><section class="panel"><h3>两周恢复阶段</h3><ol><li>Week 1：资料、判断、言语为主</li><li>Week 2：数量、科学推理、政治常识为主</li><li>每天：1个主模块 + 1个轻量模块</li><li>每个模块：体系恢复 → 闭卷回忆 → 真题验证 → 复盘</li></ol></section><section class="panel"><h3>晋级到计时训练的标准</h3><ul><li>六模块首轮覆盖约90%</li><li>传统模块至少2组有效真题样本</li><li>能分辨必做 / 可做 / 慢题 / 应跳</li><li>错题均关联到知识节点</li><li>数量能识别“识别/建模/计算/止损”耗时来源</li></ul></section></div></section>
+  </main>
+</div>
+<script src="/static/app.js"></script>
+</body></html>
