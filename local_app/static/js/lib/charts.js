@@ -1,0 +1,2 @@
+import{h}from'./dom.js';
+export function sparkline(values=[],w=90,hgt=28){const svg=h('svg',{width:w,height:hgt,viewBox:`0 0 ${w} ${hgt}`,'aria-label':'最近训练正确率趋势'});if(values.length<2)return svg;const min=Math.min(...values),max=Math.max(...values),range=max-min||1;const pts=values.map((v,i)=>`${i*(w/(values.length-1))},${hgt-3-(v-min)/range*(hgt-6)}`).join(' ');svg.append(h('polyline',{points:pts,fill:'none',stroke:'currentColor','stroke-width':'2'}));return svg}

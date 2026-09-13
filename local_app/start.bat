@@ -1,10 +1,11 @@
 @echo off
-setlocal
-cd /d %~dp0
-if not exist .venv (
-  py -3 -m venv .venv 2>nul || python -m venv .venv
-)
-call .venv\Scripts\activate
-python -m pip install -q --upgrade pip
-pip install -q -r requirements.txt
-python app.py
+chcp 65001 >nul
+cd /d "%~dp0"
+python -c "import sys; assert sys.version_info >= (3,10), '需要 Python 3.10 或更高版本。'" || exit /b 1
+if not exist .venv\Scripts\python.exe python -m venv .venv
+.venv\Scripts\python.exe -m pip install -U pip >nul
+.venv\Scripts\python.exe -m pip install -r requirements.txt >nul
+.venv\Scripts\python.exe tools\import_legacy.py
+.venv\Scripts\python.exe tools\seed.py
+start "" /b .venv\Scripts\python.exe -c "import time,webbrowser;time.sleep(2);webbrowser.open('http://127.0.0.1:8000')"
+.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000

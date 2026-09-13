@@ -1,0 +1,2 @@
+export async function api(url,opts={}){const r=await fetch(url,{headers:opts.body instanceof FormData?{}:{'Content-Type':'application/json'},...opts});const text=await r.text();let data;try{data=JSON.parse(text)}catch{data=text}if(!r.ok){const msg=data?.error?.message||data?.detail||String(data);throw new Error(msg)}return data}
+export const jpost=(u,b={})=>api(u,{method:'POST',body:JSON.stringify(b)});export const jpatch=(u,b)=>api(u,{method:'PATCH',body:JSON.stringify(b)});export const jput=(u,b)=>api(u,{method:'PUT',body:JSON.stringify(b)});
