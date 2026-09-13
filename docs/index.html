@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>2027 公考备考工作台</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">公</div>
+        <div><strong>2027 公考工作台</strong><span>广东省考优先 · 国考同步</span></div>
+      </div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="overview">总览</button>
+        <button class="nav-item" data-view="knowledge">知识库</button>
+        <button class="nav-item" data-view="training">训练记录</button>
+        <button class="nav-item" data-view="mistakes">错题本</button>
+        <button class="nav-item" data-view="plan">备考规划</button>
+        <button class="nav-item" data-view="research">研究中心</button>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot"></span> Phase 0A-R 系统快速恢复
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="page-title">备考总览</h1>
+          <p id="page-subtitle">进度、知识、训练、错题、规划统一工作台</p>
+        </div>
+        <div class="top-actions">
+          <input id="global-search" type="search" placeholder="搜索题型、技巧、错题…" />
+          <span class="date-chip">2026-09-13 · Day 1</span>
+        </div>
+      </header>
+
+      <section id="overview" class="view active">
+        <div class="hero-grid">
+          <div class="hero-card primary">
+            <span class="eyebrow">当前阶段</span>
+            <h2>行测系统快速恢复</h2>
+            <p>先恢复完整题型地图、核心公式与实战技巧，再通过分模块真题和整卷基线建立个人方法论。</p>
+            <div class="progress-row"><span>首轮恢复</span><div class="progress"><i style="width:18%"></i></div><b>18%</b></div>
+          </div>
+          <div class="hero-card">
+            <span class="eyebrow">今日数据</span>
+            <div class="big-number">30 <small>题</small></div>
+            <div class="muted">24 对 · 累计正确率 80.0%</div>
+          </div>
+          <div class="hero-card">
+            <span class="eyebrow">累计用时</span>
+            <div class="big-number">41 <small>min</small></div>
+            <div class="muted">粗略 82 秒/题 · 数量体感偏慢</div>
+          </div>
+        </div>
+
+        <div class="grid two">
+          <div class="panel">
+            <div class="panel-head"><h3>模块表现</h3><span>恢复期样本</span></div>
+            <div id="module-bars" class="bars"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>训练趋势</h3><span>不等难，仅看方向</span></div>
+            <div class="trend-card"><div><b>Training-001</b><span>10/15 · 66.7% · ~20m</span></div><div class="trend-line"><i style="width:67%"></i></div></div>
+            <div class="trend-card"><div><b>Training-002</b><span>14/15 · 93.3% · ~21m</span></div><div class="trend-line"><i style="width:93%"></i></div></div>
+            <p class="note">第二组明显更高，但题型与难度不等价，不能解释为能力提升 26.6 个百分点。</p>
+          </div>
+        </div>
+
+        <div class="grid three">
+          <div class="panel compact"><div class="panel-head"><h3>今日主线</h3></div><ol class="todo"><li class="done">完成两组冷启动样本</li><li>资料分析系统恢复</li><li>判断推理系统恢复</li><li>关闭笔记做主动回忆</li></ol></div>
+          <div class="panel compact"><div class="panel-head"><h3>重点观察</h3></div><ul class="plain"><li>数量：识别 / 建模 / 计算哪一步慢</li><li>资料：首组错点是否仅为生疏</li><li>判断：加强题是否存在相关性判断问题</li></ul></div>
+          <div class="panel compact"><div class="panel-head"><h3>下一阶段门槛</h3></div><ul class="plain"><li>六模块完成第一轮恢复</li><li>各模块至少一次真题验证</li><li>再进入广东 90 分钟整卷</li></ul></div>
+        </div>
+      </section>
+
+      <section id="knowledge" class="view">
+        <div class="toolbar">
+          <div id="module-filter" class="chips"></div>
+          <select id="confidence-filter"><option value="all">全部可信度</option><option value="high">高可信</option><option value="medium">中可信</option><option value="candidate">候选技巧</option></select>
+        </div>
+        <div class="grid knowledge-layout">
+          <div class="panel">
+            <div class="panel-head"><h3>行测方法卡</h3><span id="method-count"></span></div>
+            <div id="method-list" class="method-list"></div>
+          </div>
+          <div class="panel sticky-panel">
+            <div class="panel-head"><h3>方法卡详情</h3></div>
+            <div id="method-detail" class="detail-empty">点击左侧方法卡查看：触发场景、操作步骤、适用边界、常见误用、个人验证状态。</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="training" class="view">
+        <div class="stats-row" id="training-stats"></div>
+        <div class="panel">
+          <div class="panel-head"><h3>训练历史</h3><span>自动归档</span></div>
+          <div class="table-wrap"><table><thead><tr><th>训练</th><th>题量</th><th>正确</th><th>正确率</th><th>用时</th><th>判断</th><th>数量</th><th>资料</th><th>结论</th></tr></thead><tbody id="training-table"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="mistakes" class="view">
+        <div class="panel">
+          <div class="panel-head"><h3>错题 / 错误模式</h3><span>一次错误≠稳定弱点</span></div>
+          <div id="mistake-list" class="mistake-list"></div>
+        </div>
+      </section>
+
+      <section id="plan" class="view">
+        <div class="grid two">
+          <div class="panel"><div class="panel-head"><h3>阶段路线</h3></div><div id="phase-timeline" class="timeline"></div></div>
+          <div class="panel"><div class="panel-head"><h3>首轮恢复进度</h3></div><div id="recovery-progress"></div></div>
+        </div>
+        <div class="panel"><div class="panel-head"><h3>当前 2–4 天恢复策略</h3></div><div class="plan-columns"><div><b>优先</b><p>资料分析、判断推理</p></div><div><b>随后</b><p>言语理解、数量关系</p></div><div><b>广东特色</b><p>科学推理</p></div><div><b>滚动</b><p>政治理论 / 常识</p></div></div></div>
+      </section>
+
+      <section id="research" class="view">
+        <div class="grid two">
+          <div class="panel"><div class="panel-head"><h3>来源分层</h3></div><div class="source-pyramid"><div class="lvl l1">官方考纲 / 法规 / 主管部门</div><div class="lvl l2">公开名师完整课程</div><div class="lvl l3">主流机构方法文章</div><div class="lvl l4">高质量学员复盘 / 思维导图</div><div class="lvl l5">GitHub Skill / 社区方法库</div></div></div>
+          <div class="panel"><div class="panel-head"><h3>采用规则</h3></div><ul class="plain"><li>能用数学/逻辑直接证明：优先保留。</li><li>经验技巧必须写清适用条件与误差方向。</li><li>“固定顺序 / 固定限时 / 答案分布蒙题”默认只算候选。</li><li>个人连续真题验证后，才进入“个人稳定方法”。</li></ul></div>
+        </div>
+        <div class="panel"><div class="panel-head"><h3>当前研究条目</h3><span>来源≠结论</span></div><div id="research-list" class="research-list"></div></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
