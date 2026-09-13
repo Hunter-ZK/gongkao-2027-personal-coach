@@ -5,6 +5,7 @@ from markdown import markdown
 from knowledge_rich import get_catalog as _get_catalog, get_pages as _get_pages, build_page as _build_page
 from knowledge_curated_extra import EXTRA_CURATED
 from knowledge_source_core import SOURCE_MD
+from knowledge_examples import EXAMPLES
 
 BASE = Path(__file__).resolve().parent
 REPO_LEGACY = BASE.parent / 'references' / 'legacy_notes'
@@ -70,6 +71,11 @@ def build_page(module, page_id):
         page['curated_status'] = '已完成专题级精编'
     else:
         page['curated_status'] = '已接入来源内容；专题级精编持续补强'
+
+    # Add classic models / worked micro-example when this page has finished content treatment.
+    example = EXAMPLES.get((module, title))
+    if example:
+        page.update(example)
 
     # Prefer verified excerpts from the user's original full notes captured during rebuild.
     source = SOURCE_MD.get((module, title), '')
