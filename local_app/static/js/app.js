@@ -10,9 +10,11 @@ import { renderProgress } from './pages/progress.js';
 import { renderMethods } from './pages/methods.js';
 import { renderSettings } from './pages/settings.js';
 import { renderCoachPage } from './pages/coach.js';
+import { renderStudyAnalytics } from './pages/study_analytics.js';
 import { initGlobalCoach } from './global_coach.js';
-import { initFocusWidget, renderFocusHistoryPage } from './focus_widget.js';
+import { initFocusWidget } from './focus_widget.js';
 import { initSyncWidget } from './sync_widget.js';
+import { initPdfDropZone } from './pdf_drop.js';
 import { initZenMode, toggleZenMode, zenModeEnabled } from './privacy.js';
 
 const sidebar = document.querySelector('.sidebar');
@@ -44,9 +46,7 @@ async function loadKnowledgeProgress() {
     const list = rows.filter((row) => row.subject === 'xingce');
     const built = list.filter((row) => row.build_status !== '未建设').length;
     badge.textContent = list.length ? `${built}/${list.length}` : '';
-  } catch (_) {
-    badge.textContent = '';
-  }
+  } catch (_) { badge.textContent = ''; }
 }
 
 async function loadSidebarStage() {
@@ -64,113 +64,61 @@ async function loadSidebarStage() {
     progress.textContent = target ? `${actual.toFixed(1)}h / ${target.toFixed(1)}h` : `${actual.toFixed(1)}h`;
     fill.style.width = `${target ? Math.min(100, Math.round((actual / target) * 100)) : 0}%`;
   } catch (_) {
-    name.textContent = '当前阶段';
-    progress.textContent = '—';
-    fill.style.width = '0%';
+    name.textContent = '当前阶段'; progress.textContent = '—'; fill.style.width = '0%';
   }
 }
 
 function setToday() {
   const label = document.querySelector('.today-label');
   if (!label) return;
-  label.textContent = new Intl.DateTimeFormat('zh-CN', {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  }).format(new Date());
+  label.textContent = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' }).format(new Date());
 }
 
 async function boot() {
   try {
     await loadTimer();
     initFocusWidget();
+    let result;
     switch (page) {
-      case '/': return renderDashboard();
-      case '/today': return renderToday();
-      case '/timer': return renderFocusHistoryPage();
-      case '/trainings': return renderTrainings();
-      case '/questions': {
-        history.replaceState(null, '', '/trainings?tab=bank');
-        return renderQuestionBank();
-      }
-      case '/mistakes': return renderMistakesGemini();
-      case '/review': return renderReviewGemini();
-      case '/import': return renderImport();
-      case '/knowledge': return renderKnowledge('xingce');
-      case '/shenlun': return renderKnowledge('shenlun');
-      case '/coach': return renderCoachPage();
-      case '/plan': return renderPlan();
-      case '/progress': return renderProgress();
-      case '/methods': return renderMethods();
-      case '/settings': return renderSettings();
-      default: return renderDashboard();
+      case '/': result = await renderDashboard(); break;
+      case '/today': result = await renderToday(); break;
+      case '/timer': result = await renderStudyAnalytics(); break;
+      case '/trainings': result = await renderTrainings(); break;
+      case '/questions': history.replaceState(null, '', '/trainings?tab=bank'); result = await renderQuestionBank(); break;
+      case '/mistakes': result = await renderMistakesGemini(); break;
+      case '/review': result = await renderReviewGemini(); break;
+      case '/import': result = await renderImport(); initPdfDropZone(); break;
+      case '/knowledge': result = await renderKnowledge('xingce'); break;
+      case '/shenlun': result = await renderKnowledge('shenlun'); break;
+      case '/coach': result = await renderCoachPage(); break;
+      case '/plan': result = await renderPlan(); break;
+      case '/progress': result = await renderProgress(); break;
+      case '/methods': result = await renderMethods(); break;
+      case '/settings': result = await renderSettings(); break;
+      default: result = await renderDashboard();
     }
-  } catch (error) {
-    err(error);
-  }
+    return result;
+  } catch (error) { err(error); }
 }
 
 let gPending = false;
 document.addEventListener('keydown', async (event) => {
-  if (event.altKey && event.key.toLowerCase() === 'z') {
-    setTimeout(syncZenButton, 0);
-    return;
-  }
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-    event.preventDefault();
-    document.querySelector('#help-dialog')?.showModal();
-    return;
-  }
+  if (event.altKey && event.key.toLowerCase() === 'z') { setTimeout(syncZenButton, 0); return; }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); document.querySelector('#help-dialog')?.showModal(); return; }
   if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
-  if (event.key === 'Escape') {
-    document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close());
-    sidebar?.classList.remove('mobile-open');
-    return;
-  }
-  if (event.key.toLowerCase() === 't' && !event.altKey && !event.ctrlKey && !event.metaKey) {
-    event.preventDefault();
-    window.openGlobalFocus?.();
-    return;
-  }
-  if (event.key.toLowerCase() === 'g') {
-    gPending = true;
-    setTimeout(() => { gPending = false; }, 800);
-    return;
-  }
+  if (event.key === 'Escape') { document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close()); sidebar?.classList.remove('mobile-open'); return; }
+  if (event.key.toLowerCase() === 't' && !event.altKey && !event.ctrlKey && !event.metaKey) { event.preventDefault(); window.openGlobalFocus?.(); return; }
+  if (event.key.toLowerCase() === 'g') { gPending = true; setTimeout(() => { gPending = false; }, 800); return; }
   if (gPending) {
-    const routes = { d: '/', t: '/today', k: '/knowledge', r: '/review' };
-    const target = routes[event.key.toLowerCase()];
-    if (target) location.href = target;
+    const routes = { d: '/', t: '/today', k: '/knowledge', r: '/review', p: '/progress' };
+    const target = routes[event.key.toLowerCase()]; if (target) location.href = target;
   }
-  if (
-    page === '/review'
-    && !event.altKey
-    && !event.ctrlKey
-    && !event.metaKey
-    && ['a', 'b', 'c', 'd'].includes(event.key.toLowerCase())
-  ) {
-    setReviewAnswerGemini(event.key.toUpperCase());
-    return;
-  }
-  if (page === '/review' && (event.key === 'Enter' || event.key === ' ')) {
-    event.preventDefault();
-    await handleReviewEnterGemini();
-  }
+  if (page === '/review' && !event.altKey && !event.ctrlKey && !event.metaKey && ['a','b','c','d'].includes(event.key.toLowerCase())) { setReviewAnswerGemini(event.key.toUpperCase()); return; }
+  if (page === '/review' && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); await handleReviewEnterGemini(); }
 });
 
-markActiveNavigation();
-setToday();
-loadKnowledgeProgress();
-loadSidebarStage();
+markActiveNavigation(); setToday(); loadKnowledgeProgress(); loadSidebarStage();
 if (menu && sidebar) menu.onclick = () => sidebar.classList.toggle('mobile-open');
-initZenMode();
-syncZenButton();
-if (zenButton) {
-  zenButton.onclick = () => {
-    toggleZenMode();
-    syncZenButton();
-  };
-}
-initGlobalCoach();
-initSyncWidget();
-boot();
+initZenMode(); syncZenButton();
+if (zenButton) zenButton.onclick = () => { toggleZenMode(); syncZenButton(); };
+initGlobalCoach(); initSyncWidget(); boot();

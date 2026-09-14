@@ -10,6 +10,7 @@ PY
 if [ ! -x .venv/bin/python ]; then "$PYTHON_BIN" -m venv .venv; fi
 .venv/bin/python -m pip install -U pip >/dev/null
 .venv/bin/python -m pip install -r requirements.txt >/dev/null
+.venv/bin/python tools/generate_missing_nodes.py
 .venv/bin/python tools/import_legacy.py
 .venv/bin/python tools/seed.py
 (.venv/bin/python - <<'PY'

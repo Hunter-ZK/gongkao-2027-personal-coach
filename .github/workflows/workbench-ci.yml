@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - rebuild/workbench-v1
+      - feature/workbench-v3-gemini-analytics-ai
   pull_request:
 
 jobs:
@@ -32,8 +33,9 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r requirements.txt
           python -m pip install pytest httpx
-      - name: Import legacy notes and seed clean database
+      - name: Build formal knowledge coverage and seed clean database
         run: |
+          python tools/generate_missing_nodes.py
           python tools/import_legacy.py
           python tools/seed.py
       - name: Python tests
