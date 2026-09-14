@@ -11,7 +11,8 @@ def test_real_fixture_contract(tmp_path):
     parser=FenbiParser()
     assert parser.detect(FIX) == 1.0
     result=parser.parse(FIX,tmp_path/'images')
-    assert result.parser_version=='2.0'
+    assert result.parser_version=='3.0'
+    assert result.meta.get('layout_engine')=='geometry-v3'
     assert len(result.questions)==15
     correct=sum(1 for q in result.questions if q.user_answer and q.correct_answer and q.user_answer==q.correct_answer)
     assert correct==14
