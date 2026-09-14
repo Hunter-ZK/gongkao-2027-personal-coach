@@ -1,4 +1,4 @@
-import{page,loadTimer,err,renderTimerPage}from'./runtime.js';
+import{page,loadTimer,err,renderTimerPage,api}from'./runtime.js';
 import{renderDashboard,renderToday}from'./pages/dashboard.js';
 import{renderTrainings,renderMistakes,renderReview,renderImport,setReviewAnswer}from'./pages/learning.js';
 import{renderKnowledge,renderPlan,renderProgress,renderMethods,renderSettings}from'./pages/knowledge.js';
@@ -6,7 +6,7 @@ import{renderXingceMethodSystem}from'./pages/methods.js';
 import{renderCoachPage}from'./pages/coach.js';
 
 document.querySelectorAll('.side-nav a[data-path]').forEach(a=>{if(a.dataset.path===page)a.classList.add('active')});
-const knowledgeBadge=document.querySelector('.side-nav a[data-path="/knowledge"] em');if(knowledgeBadge)knowledgeBadge.textContent='80';
+const knowledgeBadge=document.querySelector('.side-nav a[data-path="/knowledge"] em');if(knowledgeBadge)api('/api/knowledge/method-summary').then(x=>{knowledgeBadge.textContent=String(x.total??'方法')}).catch(()=>{knowledgeBadge.textContent='方法'});
 document.querySelector('.today-label').textContent=new Intl.DateTimeFormat('zh-CN',{month:'long',day:'numeric',weekday:'short'}).format(new Date());
 const menu=document.querySelector('.mobile-menu'),sidebar=document.querySelector('.sidebar');if(menu&&sidebar)menu.onclick=()=>sidebar.classList.toggle('mobile-open');
 
