@@ -2,7 +2,8 @@ import { page, loadTimer, err, api } from './runtime.js';
 import { renderDashboard, renderToday } from './pages/dashboard.js';
 import { renderImport } from './pages/import.js';
 import { renderTrainings, renderQuestionBank } from './pages/training.js';
-import { renderMistakes, renderReview, setReviewAnswer } from './pages/mistakes.js';
+import { renderMistakesGemini } from './pages/mistakes_gemini.js';
+import { renderReviewGemini, setReviewAnswerGemini, handleReviewEnterGemini } from './pages/review_gemini.js';
 import { renderKnowledge } from './pages/knowledge.js';
 import { renderPlan } from './pages/plan.js';
 import { renderProgress } from './pages/progress.js';
@@ -91,8 +92,8 @@ async function boot() {
         history.replaceState(null, '', '/trainings?tab=bank');
         return renderQuestionBank();
       }
-      case '/mistakes': return renderMistakes();
-      case '/review': return renderReview();
+      case '/mistakes': return renderMistakesGemini();
+      case '/review': return renderReviewGemini();
       case '/import': return renderImport();
       case '/knowledge': return renderKnowledge('xingce');
       case '/shenlun': return renderKnowledge('shenlun');
@@ -109,7 +110,7 @@ async function boot() {
 }
 
 let gPending = false;
-document.addEventListener('keydown', (event) => {
+document.addEventListener('keydown', async (event) => {
   if (event.altKey && event.key.toLowerCase() === 'z') {
     setTimeout(syncZenButton, 0);
     return;
@@ -147,7 +148,12 @@ document.addEventListener('keydown', (event) => {
     && !event.metaKey
     && ['a', 'b', 'c', 'd'].includes(event.key.toLowerCase())
   ) {
-    setReviewAnswer(event.key.toUpperCase());
+    setReviewAnswerGemini(event.key.toUpperCase());
+    return;
+  }
+  if (page === '/review' && (event.key === 'Enter' || event.key === ' ')) {
+    event.preventDefault();
+    await handleReviewEnterGemini();
   }
 });
 
