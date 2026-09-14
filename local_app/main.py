@@ -7,22 +7,22 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from db import migrate, query, query_one
-from routers import dashboard,timer,training,mistakes,knowledge,method_catalog,plan,misc,coach,sync
+from routers import dashboard,timer,training,mistakes,knowledge,method_catalog,plan,misc,coach,sync,analytics,question_ai
 BASE=Path(__file__).resolve().parent
 migrate()
-app=FastAPI(title='2027 公考个人备考工作台',version='1.4.0')
+app=FastAPI(title='2027 公考个人备考工作台',version='1.5.0')
 app.mount('/static',StaticFiles(directory=BASE/'static'),name='static')
 app.mount('/data-images',StaticFiles(directory=BASE/'data'/'images'),name='data-images')
 templates=Jinja2Templates(directory=BASE/'templates')
-for router in [dashboard.r,timer.r,training.r,mistakes.r,knowledge.r,method_catalog.r,plan.r,misc.r,coach.r,sync.r]:app.include_router(router)
+for router in [dashboard.r,timer.r,training.r,mistakes.r,knowledge.r,method_catalog.r,plan.r,misc.r,coach.r,sync.r,analytics.r,question_ai.r]:app.include_router(router)
 @app.get('/health')
-def health():return {'ok':True,'service':'gongkao-workbench','version':'1.4.0'}
+def health():return {'ok':True,'service':'gongkao-workbench','version':'1.5.0'}
 @app.exception_handler(Exception)
 async def err(req:Request,exc:Exception):
     from fastapi import HTTPException
     if isinstance(exc,HTTPException):return JSONResponse({'error':{'code':str(exc.status_code),'message':str(exc.detail)}},status_code=exc.status_code)
     return JSONResponse({'error':{'code':'internal_error','message':str(exc)}},status_code=500)
-PAGES={'/':'总览','/today':'今日任务','/timer':'学习计时','/trainings':'训练记录','/questions':'题库','/mistakes':'错题本','/review':'错题复训','/import':'导入','/knowledge':'行测体系','/shenlun':'申论体系','/coach':'AI方法教练','/plan':'备考规划','/progress':'能力趋势','/methods':'方法与结论','/settings':'设置'}
+PAGES={'/':'总览','/today':'今日任务','/timer':'学习时长看板','/trainings':'训练记录','/questions':'题库','/mistakes':'错题本','/review':'错题复训','/import':'导入','/knowledge':'行测体系','/shenlun':'申论体系','/coach':'AI方法教练','/plan':'周度攻坚日程','/progress':'作答表现看板','/methods':'方法与结论','/settings':'设置'}
 @app.get('/{path:path}',response_class=HTMLResponse)
 def shell(request:Request,path:str=''):
     p='/' + path if path else '/'

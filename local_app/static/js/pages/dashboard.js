@@ -1,225 +1,286 @@
-import {
-  api,
-  jpatch,
-  main,
-  clear,
-  h,
-  hours,
-  pct,
-  metric,
-  examHero,
-  criterionCard,
-  dayBars,
-  moduleBoard,
-  sectionHead,
-  title,
-  panel,
-} from '../runtime.js';
+import { api, jpatch, jpost, main, clear, h, pct, hours, fmtSec } from '../runtime.js';
 
-function emptyDashboard(d) {
-  clear(main).append(
-    title('工作台概览', '本地数据库尚未初始化。初始化后，这里只展示真实学习、训练和复训数据。'),
-    h('section', { class: 'panel' },
-      sectionHead('尚未初始化'),
-      h('p', {}, d.initialization_message || '请先运行 seed 建立基础数据。'),
-      h('p', { class: 'subtle' }, '系统不会用示例成绩或虚构训练记录填充空白状态。'),
-    ),
+const PRIORITY_LABEL = { P0: '必须完成', P1: '核心推进', P2: '弹性任务' };
+
+function icon(id, cls = 'v3-icon') {
+  return h('svg', { class: cls, viewBox: '0 0 24 24', 'aria-hidden': 'true' }, h('use', { href: `/static/img/icons.svg#${id}` }));
+}
+
+function progress(value) {
+  const safe = Math.max(0, Math.min(100, Number(value) || 0));
+  return h('div', { class: 'v3-progress-track' }, h('span', { style: `width:${safe}%` }));
+}
+
+function statCard(label, value, note, iconId, tone = '') {
+  return h('article', { class: `v3-kpi-card ${tone}` },
+    h('div', { class: 'v3-kpi-head' }, h('span', {}, label), h('span', { class: 'v3-kpi-icon' }, icon(iconId))),
+    h('strong', { class: 'v3-kpi-value' }, value),
+    h('small', {}, note),
   );
 }
 
-function weekTimeline(d) {
-  return h(
-    'div',
-    { class: 'week-timeline' },
-    ...(d.timeline.weeks || []).map((w) => h(
-      'div',
-      { 'data-status': w.status, title: `${w.start}—${w.end} · ${w.theme}` },
-      h('strong', {}, `W${w.no}`),
-      h('span', {}, w.theme),
-    )),
-  );
+function currentWeek(data) {
+  return data.timeline?.weeks?.find((row) => row.no === data.timeline?.current_week) || data.timeline?.weeks?.[0] || null;
 }
 
-function parseTask(task) {
-  return {
-    ...task,
-    steps: Array.isArray(task.steps) ? task.steps : (() => {
-      try { return JSON.parse(task.steps_json || '[]'); } catch (_) { return []; }
-    })(),
-    node_slugs_list: Array.isArray(task.node_slugs_list) ? task.node_slugs_list : (() => {
-      try { return JSON.parse(task.node_slugs || '[]'); } catch (_) { return []; }
-    })(),
-  };
+function dateRange(week) {
+  if (!week) return '尚未建立周计划';
+  const fmt = (value) => value ? `${Number(value.slice(5, 7))}/${Number(value.slice(8, 10))}` : '—';
+  return `${fmt(week.start)} – ${fmt(week.end)}`;
 }
 
-function startTaskFocus(task) {
-  window.startGlobalFocus?.({
-    module: task.module || '综合',
-    activity_type: task.module === '申论' ? '申论写作' : '知识恢复',
-    task_id: task.id,
-    task_name: task.title,
-  });
-}
-
-function taskCard(task, rerender, compact = false) {
-  const t = parseTask(task);
-  const done = t.status === 'done';
-  const checkbox = h('input', { type: 'checkbox', checked: done });
-  checkbox.onchange = async () => {
-    await jpatch(`/api/tasks/${t.id}`, { status: done ? 'todo' : 'done' });
-    await rerender?.();
-  };
-
-  const card = h('article', { class: `task-card gemini-task-card ${done ? 'done' : ''}` },
-    h('div', { class: 'gemini-task-main' },
-      checkbox,
-      h('div', { class: 'gemini-task-copy' },
-        h('div', { class: 'gemini-task-meta' },
-          h('span', { class: `task-priority ${t.priority || 'P2'}` }, t.priority || 'P2'),
-          h('span', { class: 'task-module-chip' }, t.module || '综合'),
-          h('span', { class: 'task-minute-chip' }, `约 ${t.est_minutes || 0} 分钟`),
-        ),
-        h('h3', {}, t.title),
+function milestoneHero(data) {
+  const week = currentWeek(data);
+  const phase = data.phase || {};
+  const actualH = Number(data.week?.actual_seconds || 0) / 3600;
+  const targetH = Number(data.week?.target_hours || 0);
+  const completion = targetH ? Math.min(100, actualH / targetH * 100) : 0;
+  const focusPayload = JSON.stringify({ module: '综合', activity_type: '知识恢复', task_name: '25 分钟快速推进' });
+  return h('section', { class: 'v3-milestone-hero' },
+    h('div', { class: 'v3-milestone-main' },
+      h('div', { class: 'v3-milestone-tags' },
+        h('span', { class: 'v3-dark-chip' }, `W${data.timeline?.current_week || '—'}`),
+        h('span', { class: 'v3-dark-chip soft' }, phase.code || '当前阶段'),
+        h('span', { class: 'v3-dark-muted' }, dateRange(week)),
+      ),
+      h('h1', {}, phase.name || week?.theme || '当前备考阶段'),
+      h('p', {}, phase.goal_md || week?.theme || '以真实训练、时间和复训数据推进本周目标。'),
+      h('div', { class: 'v3-hero-progress' },
+        h('div', {}, h('span', {}, '本周有效学习'), h('strong', {}, `${actualH.toFixed(1)}h / ${targetH ? `${targetH.toFixed(1)}h` : '—'}`)),
+        progress(completion),
       ),
     ),
-    h('div', { class: 'gemini-task-actions' },
-      h('button', { class: 'secondary', onclick: () => startTaskFocus(t) }, '计时推进'),
-      t.action_url ? h('a', { class: 'primary', href: t.action_url }, '前往执行') : null,
+    h('div', { class: 'v3-milestone-actions' },
+      h('a', { href: '/review', class: 'v3-hero-action' }, icon('review'), h('span', {}, '待复训'), h('strong', {}, String(data.week?.reviews_due || 0)), h('small', {}, '道')),
+      h('button', {
+        class: 'v3-hero-action primary',
+        type: 'button',
+        onclick: () => window.startGlobalFocus?.(JSON.parse(focusPayload)),
+      }, icon('stopwatch'), h('span', {}, '快速专注'), h('strong', {}, '25'), h('small', {}, 'min')),
     ),
   );
+}
 
-  if (!compact) {
-    card.append(h('div', { class: 'gemini-task-detail' },
-      h('div', {}, h('strong', {}, '为什么做：'), h('span', {}, t.reason_md || '由今日计划规则生成。')),
-      t.steps?.length ? h('div', {}, h('strong', {}, '执行步骤：'), h('ol', {}, ...t.steps.slice(0, 4).map((x) => h('li', {}, x)))) : null,
-      t.done_criteria ? h('div', {}, h('strong', {}, '完成标准：'), h('span', { class: 'task-done-rule' }, t.done_criteria)) : null,
-    ));
+function dailyDistribution(data) {
+  const week = currentWeek(data);
+  const map = new Map((data.week?.by_day || []).map((row) => [row.date, row]));
+  const rows = [];
+  if (week) {
+    let d = new Date(`${week.start}T12:00:00`);
+    for (let i = 0; i < 7; i += 1) {
+      const key = d.toISOString().slice(0, 10);
+      rows.push(map.get(key) || { date: key, seconds: 0, deep_seconds: 0 });
+      d = new Date(d.getTime() + 86400000);
+    }
   }
-  return card;
+  const max = Math.max(3600, ...rows.map((row) => Number(row.seconds || 0)));
+  const labels = ['一', '二', '三', '四', '五', '六', '日'];
+  return h('section', { class: 'v3-card v3-study-chart-card' },
+    h('div', { class: 'v3-card-head' },
+      h('div', {}, h('h2', {}, '本周学习时长分布'), h('p', {}, '深色为深度学习，浅色为其他有效学习；只统计真实计时记录。')),
+      h('a', { href: '/timer', class: 'v3-text-link' }, '查看时间看板 →'),
+    ),
+    h('div', { class: 'v3-week-bars' }, ...rows.map((row, index) => {
+      const total = Number(row.seconds || 0);
+      const deep = Math.min(total, Number(row.deep_seconds || 0));
+      const other = Math.max(0, total - deep);
+      const totalH = total / 3600;
+      return h('div', { class: 'v3-week-bar-col', title: `${row.date} · ${hours(total)}` },
+        h('strong', {}, total ? `${totalH.toFixed(1)}h` : '—'),
+        h('div', { class: 'v3-week-bar-track' },
+          h('span', { class: 'v3-week-bar deep', style: `height:${(deep / max) * 100}%` }),
+          h('span', { class: 'v3-week-bar normal', style: `height:${(other / max) * 100}%` }),
+        ),
+        h('small', {}, `周${labels[index]}`),
+      );
+    })),
+    h('div', { class: 'v3-chart-legend' }, h('span', {}, h('i', { class: 'deep' }), '深度学习'), h('span', {}, h('i', { class: 'normal' }), '常规/碎片')),
+  );
+}
+
+function criteriaCard(data) {
+  const rows = data.phase?.criteria || [];
+  return h('section', { class: 'v3-card v3-criteria-card' },
+    h('div', { class: 'v3-card-head' },
+      h('div', {}, h('h2', {}, `${data.phase?.code || ''} 阶段晋级条件`), h('p', {}, `${data.phase?.blocking_count || 0} 项尚未达成；不以主观感觉代替晋级证据。`)),
+      h('span', { class: `v3-status-pill ${data.phase?.can_advance ? 'good' : 'warn'}` }, data.phase?.can_advance ? '可晋级' : '推进中'),
+    ),
+    h('div', { class: 'v3-criteria-list' }, ...rows.map((row) => {
+      const current = Number(row.current || 0);
+      const threshold = Number(row.threshold || 0);
+      const ratio = threshold > 0 ? Math.min(100, current / threshold * 100) : (row.passed ? 100 : 0);
+      return h('div', { class: `v3-criterion-row ${row.passed ? 'passed' : ''}` },
+        h('span', { class: 'v3-criterion-state' }, icon(row.passed ? 'check-circle' : 'clock')),
+        h('div', { class: 'v3-criterion-copy' }, h('strong', {}, row.label), progress(ratio)),
+        h('span', { class: 'v3-criterion-value' }, `${current < 2 ? current.toFixed(2) : Math.round(current)} / ${threshold}`),
+      );
+    })),
+  );
+}
+
+function taskPreview(task) {
+  const done = task.status === 'done';
+  return h('article', { class: `v3-task-preview ${done ? 'done' : ''}` },
+    h('span', { class: `v3-priority ${task.priority || 'P2'}` }, task.priority || 'P2'),
+    h('div', { class: 'v3-task-preview-copy' },
+      h('strong', {}, task.title),
+      h('small', {}, `${task.module || '综合'} · ${task.est_minutes || 0} 分钟${task.reason_md ? ` · ${task.reason_md}` : ''}`),
+    ),
+    h('button', {
+      type: 'button',
+      class: 'v3-icon-button',
+      disabled: done,
+      title: done ? '已完成' : '计时推进',
+      onclick: () => window.startGlobalFocus?.({ module: task.module || '综合', activity_type: '知识恢复', task_id: task.id, task_name: task.title }),
+    }, icon(done ? 'check-circle' : 'play')),
+  );
+}
+
+function todayPreview(data) {
+  const tasks = (data.tasks || []).slice(0, 5);
+  return h('section', { class: 'v3-card v3-today-preview' },
+    h('div', { class: 'v3-card-head' },
+      h('div', {}, h('h2', {}, '今日推进队列'), h('p', {}, tasks.length ? `优先处理 ${tasks.filter((x) => x.status !== 'done').length} 项未完成任务。` : '今天尚未生成任务。')),
+      h('a', { href: '/today', class: 'v3-text-link' }, '展开全部 →'),
+    ),
+    h('div', { class: 'v3-task-preview-list' }, ...tasks.map(taskPreview)),
+  );
+}
+
+function moduleStrip(titleText, rows = []) {
+  const useful = rows.filter((row) => Number(row.sample_n || 0) > 0).sort((a, b) => (a.accuracy ?? 2) - (b.accuracy ?? 2)).slice(0, 6);
+  return h('section', { class: 'v3-card v3-module-strip-card' },
+    h('div', { class: 'v3-card-head' }, h('div', {}, h('h2', {}, titleText), h('p', {}, '正确率必须和样本量一起看；样本不足不生成能力结论。')), h('a', { href: '/progress', class: 'v3-text-link' }, '作答看板 →')),
+    useful.length ? h('div', { class: 'v3-module-strip' }, ...useful.map((row) => {
+      const acc = row.accuracy == null ? null : Math.round(row.accuracy * 100);
+      return h('div', { class: 'v3-module-chip-card' },
+        h('div', {}, h('strong', {}, row.name), h('small', {}, `${row.sample_n} 题`)),
+        h('b', { class: acc != null && acc >= Math.round((row.target_accuracy || 0) * 100) ? 'good' : 'warn' }, acc == null ? '—' : `${acc}%`),
+        h('span', {}, row.gap_text || '样本不足'),
+      );
+    })) : h('div', { class: 'v3-empty' }, '还没有足够的真实训练数据。'),
+  );
 }
 
 export async function renderDashboard() {
-  const d = await api('/api/dashboard');
-  if (d.initialized === false) {
-    emptyDashboard(d);
-    return;
-  }
-
-  clear(main);
-  const criteria = d.phase.criteria || [];
-  const phasePct = criteria.length ? Math.round((criteria.filter((x) => x.passed).length / criteria.length) * 100) : 0;
-  const weekPct = d.week.target_hours ? Math.min(100, (d.week.actual_seconds / 3600 / d.week.target_hours) * 100) : 0;
-  const exG = d.exams.find((x) => x.code === 'guangdong') || d.exams[0];
-  const exN = d.exams.find((x) => x.code === 'national') || d.exams[1];
-
-  main.append(
-    h('section', { class: 'study-overview-card dashboard-overview' },
-      h('div', { class: 'study-overview-copy' },
-        h('div', { class: 'dashboard-phase-meta' },
-          h('span', {}, `第 ${d.timeline.current_week || '—'} 周 · ${d.phase.code || 'P1'} 阶段`),
-          h('small', {}, d.timeline.current_range || '当前周'),
-        ),
-        h('h2', {}, d.phase.name || '当前阶段'),
-        h('p', {}, d.phase.goal_md || '当前阶段以恢复核心方法、建立真实样本、修复稳定错误模式为主。'),
-        h('div', { class: 'actions', style: 'margin-top:14px' },
-          h('a', { class: 'primary', href: '/review' }, `今日到期错题复训 (${d.week.reviews_due || 0})`),
-          h('button', { class: 'secondary', onclick: () => window.openGlobalFocus?.() }, '开启专注器'),
-        ),
-      ),
-      h('div', { class: 'hero-exams' }, exG ? examHero(exG) : null, exN ? examHero(exN) : null),
+  const data = await api('/api/dashboard');
+  const week = data.week || {};
+  const actualH = Number(week.actual_seconds || 0) / 3600;
+  const targetH = Number(week.target_hours || 0);
+  const completion = targetH ? actualH / targetH * 100 : 0;
+  clear(main).append(
+    h('div', { class: 'v3-page-heading' },
+      h('div', {}, h('span', {}, 'PERSONAL STUDY OS'), h('h1', { class: 'page-title' }, '备考工作台概览'), h('p', {}, '只展示真正影响今天决策的数据：进度、学习投入、训练表现、复训负荷和阶段门槛。')),
+      h('div', { class: 'v3-heading-actions' }, h('a', { href: '/import', class: 'v3-primary-button' }, icon('import'), '导入最新练习'), h('a', { href: '/today', class: 'v3-secondary-button' }, '今日任务')),
     ),
-    h('div', { class: 'kpi-grid' },
-      metric('本周有效时长', hours(d.week.actual_seconds), `目标 ${d.week.target_hours}h`, weekPct, ''),
-      metric('深度专注比例', pct(d.week.deep_ratio, 0), '单次达到深度阈值', d.week.deep_ratio * 100, ''),
-      metric('本周有效训练', String(d.week.questions), '题', null, ''),
-      metric('今日到期复训', String(d.week.reviews_due), '题', null, ''),
+    milestoneHero(data),
+    h('div', { class: 'v3-kpi-grid' },
+      statCard('本周有效学习', `${actualH.toFixed(1)}h`, targetH ? `目标 ${targetH.toFixed(1)}h · ${Math.round(completion)}%` : '等待周目标', 'clock'),
+      statCard('深度学习占比', `${Math.round(Number(week.deep_ratio || 0) * 100)}%`, '按真实计时分类', 'focus', Number(week.deep_ratio || 0) >= .5 ? 'good' : ''),
+      statCard('本周有效作答', `${week.questions || 0}`, week.accuracy == null ? '尚无有效样本' : `正确率 ${pct(week.accuracy, 0)} · ${week.accuracy_note || ''}`, 'table'),
+      statCard('到期复训', `${week.reviews_due || 0}`, week.reviews_due ? '优先清掉高价值到期错题' : '当前无到期复训', 'review', week.reviews_due ? 'warn' : 'good'),
     ),
-  );
-
-  const weekCard = h('section', { class: 'panel' },
-    sectionHead('每日学习时长分布 · 本周', '有效学时与深度专注统计'),
-    dayBars(d),
-  );
-
-  const phaseCard = h('section', { class: 'panel' },
-    sectionHead('阶段出口', `完成度 ${phasePct}%`),
-    h('div', { class: 'criterion-list' }, ...criteria.map(criterionCard)),
-    criteria.length ? null : h('div', { class: 'empty' }, '当前阶段没有配置晋级条件。'),
-  );
-  main.append(h('div', { class: 'grid dashboard-two-col' }, h('div', { class: 'span-7' }, weekCard), h('div', { class: 'span-5' }, phaseCard)));
-
-  const taskNodes = d.tasks.length
-    ? d.tasks.slice(0, 5).map((t) => taskCard(t, renderDashboard, true))
-    : [h('div', { class: 'empty' }, '今天暂时没有任务。')];
-  main.append(h('section', { class: 'dashboard-task-section' }, sectionHead('今日优先任务', '按阶段、到期复训和错误模式排序'), h('div', { class: 'task-list' }, ...taskNodes)));
-
-  main.append(h('div', { class: 'grid dashboard-two-col' },
-    h('div', { class: 'span-6' }, moduleBoard('广东卷能力', d.modules.guangdong || [])),
-    h('div', { class: 'span-6' }, moduleBoard('国考副省级能力', d.modules.national || [])),
-  ));
-
-  const issueNodes = d.issues.length ? d.issues.slice(0, 5).map((x) => h(
-    'a',
-    { class: 'issue', href: x.action_url || x.href || '#' },
-    h('strong', {}, x.text || x.title),
-    h('span', {}, x.evidence || x.detail),
-  )) : [h('div', { class: 'empty' }, '暂时没有可追踪的问题。')];
-
-  main.append(
-    h('section', { class: 'panel' }, sectionHead('13 周路线', '阶段切换与验收路线'), weekTimeline(d)),
-    h('section', { class: 'panel' }, sectionHead('当前最重要的问题', '每条都能追溯到真实数据依据'), h('div', { class: 'issue-list' }, ...issueNodes)),
+    h('div', { class: 'v3-dashboard-grid two' }, dailyDistribution(data), criteriaCard(data)),
+    h('div', { class: 'v3-dashboard-grid two' }, todayPreview(data), moduleStrip('广东省考 · 当前模块证据', data.modules?.guangdong || [])),
+    h('section', { class: 'v3-card v3-roadmap-card' },
+      h('div', { class: 'v3-card-head' }, h('div', {}, h('h2', {}, '13 周备考路线'), h('p', {}, '当前周突出显示；长期路线只负责方向，日常动作由真实表现动态调整。')), h('a', { href: '/plan', class: 'v3-text-link' }, '周计划 →')),
+      h('div', { class: 'v3-roadmap' }, ...(data.timeline?.weeks || []).map((row) => h('div', { class: `v3-roadmap-node ${row.status}` }, h('strong', {}, `W${row.no}`), h('span', {}, row.theme || ''), h('small', {}, `${row.start.slice(5)} ~ ${row.end.slice(5)}`)))),
+    ),
   );
 }
 
-export async function renderToday() {
-  const raw = await api('/api/tasks');
-  const tasks = raw.map(parseTask);
-  let filter = 'all';
+function todayStats(tasks) {
+  const pending = tasks.filter((x) => x.status !== 'done');
+  const done = tasks.filter((x) => x.status === 'done');
+  return h('div', { class: 'v3-kpi-grid three' },
+    statCard('待推进', `${pending.length}`, '按 P0 → P1 → P2 排序', 'tasks'),
+    statCard('预计投入', `${pending.reduce((s, x) => s + Number(x.est_minutes || 0), 0)}m`, '未完成任务预计时长', 'clock'),
+    statCard('已完成', `${done.length}`, tasks.length ? `完成 ${Math.round(done.length / tasks.length * 100)}%` : '暂无任务', 'check-circle', done.length ? 'good' : ''),
+  );
+}
 
-  const pending = tasks.filter((t) => t.status !== 'done');
-  const done = tasks.filter((t) => t.status === 'done');
-  const totalMinutes = pending.reduce((sum, t) => sum + Number(t.est_minutes || 0), 0);
-
-  clear(main).append(title('今日任务推进队列', '动态调度到期错题与当前阶段关键任务，只保留今天真正需要执行的事项。'));
-  main.append(h('div', { class: 'today-stat-grid' },
-    h('div', { class: 'today-stat-card' }, h('span', {}, '待办任务数'), h('strong', {}, pending.length), h('small', {}, '项')),
-    h('div', { class: 'today-stat-card' }, h('span', {}, '预计总用时'), h('strong', {}, totalMinutes), h('small', {}, '分钟')),
-    h('div', { class: 'today-stat-card success' }, h('span', {}, '今日已完成'), h('strong', {}, done.length), h('small', {}, '项')),
-  ));
-
-  const tabs = h('div', { class: 'today-filter-tabs' });
-  const list = h('div', { class: 'task-list today-task-list' });
-  const defs = [
-    ['all', '全部待办'],
-    ['P0', 'P0 极高优先级'],
-    ['P1', 'P1 核心恢复'],
-    ['P2', 'P2 滚动积累'],
-    ['done', `已完成 (${done.length})`],
-  ];
-
-  const draw = () => {
-    clear(tabs);
-    defs.forEach(([id, label]) => tabs.append(h('button', {
-      class: `today-filter-tab ${filter === id ? 'active' : ''}`,
-      onclick: () => { filter = id; draw(); },
-    }, label)));
-
-    const rows = tasks.filter((t) => {
-      if (filter === 'all') return t.status !== 'done';
-      if (filter === 'done') return t.status === 'done';
-      return t.status !== 'done' && t.priority === filter;
-    });
-    clear(list);
-    if (!rows.length) {
-      list.append(h('div', { class: 'empty today-empty' },
-        h('strong', {}, '当前分类下暂无任务'),
-        h('p', {}, '任务完成或暂无匹配优先级时会自动保持为空。'),
-      ));
-      return;
-    }
-    rows.forEach((task) => list.append(taskCard(task, renderToday, false)));
+function todayTaskCard(task, rerender) {
+  const done = task.status === 'done';
+  const steps = Array.isArray(task.steps) ? task.steps : [];
+  const nodes = Array.isArray(task.node_slugs_list) ? task.node_slugs_list : [];
+  const check = h('button', { class: `v3-task-check ${done ? 'done' : ''}`, type: 'button', title: done ? '设为未完成' : '标记完成' }, icon(done ? 'check' : 'circle'));
+  check.onclick = async () => {
+    await jpatch(`/api/tasks/${task.id}`, { status: done ? 'todo' : 'done' });
+    await rerender();
   };
+  return h('article', { class: `v3-today-task ${done ? 'done' : ''}`, 'data-priority': task.priority || 'P2' },
+    h('div', { class: 'v3-today-task-top' },
+      check,
+      h('div', { class: 'v3-today-task-title' },
+        h('div', { class: 'v3-task-chips' },
+          h('span', { class: `v3-priority ${task.priority || 'P2'}` }, task.priority || 'P2'),
+          h('span', {}, PRIORITY_LABEL[task.priority] || '弹性任务'),
+          h('span', {}, task.module || '综合'),
+          h('span', {}, `${task.est_minutes || 0} min`),
+        ),
+        h('h3', {}, task.title),
+        task.reason_md ? h('p', {}, task.reason_md) : null,
+      ),
+      h('div', { class: 'v3-today-task-actions' },
+        h('button', { class: 'v3-primary-button compact', disabled: done, onclick: () => window.startGlobalFocus?.({ module: task.module || '综合', activity_type: '知识恢复', task_id: task.id, task_name: task.title }) }, icon('play'), '计时推进'),
+        h('button', { class: 'v3-secondary-button compact', disabled: done, onclick: async () => { await jpatch(`/api/tasks/${task.id}`, { postpone: true }); await rerender(); } }, '推迟'),
+      ),
+    ),
+    h('div', { class: 'v3-task-body' },
+      h('div', {}, h('span', { class: 'v3-section-label' }, '执行步骤'), steps.length ? h('ol', {}, ...steps.map((step) => h('li', {}, step))) : h('p', { class: 'v3-muted' }, '按任务描述直接执行。')),
+      h('div', {}, h('span', { class: 'v3-section-label' }, '完成标准'), h('p', {}, task.done_criteria_md || '完成任务并记录真实训练/学习结果。')),
+      nodes.length ? h('div', { class: 'v3-task-node-row' }, h('span', { class: 'v3-section-label' }, '关联知识'), ...nodes.map((slug) => h('a', { href: `/knowledge?node=${encodeURIComponent(slug)}` }, slug))) : null,
+    ),
+  );
+}
 
-  main.append(tabs, list);
-  draw();
+function addTaskDialog(rerender) {
+  const dialog = h('dialog', { class: 'v3-dialog' });
+  const titleInput = h('input', { placeholder: '任务名称' });
+  const moduleInput = h('input', { placeholder: '模块，例如：资料分析' });
+  const minutesInput = h('input', { type: 'number', min: '5', value: '30' });
+  const priority = h('select', {}, h('option', { value: 'P0' }, 'P0 必须完成'), h('option', { value: 'P1', selected: true }, 'P1 核心推进'), h('option', { value: 'P2' }, 'P2 弹性任务'));
+  const reason = h('textarea', { rows: 3, placeholder: '为什么今天做（可选）' });
+  dialog.append(
+    h('div', { class: 'v3-dialog-head' }, h('div', {}, h('h2', {}, '新增今日任务'), h('p', {}, '手动任务与系统生成任务使用同一推进队列。')), h('button', { class: 'v3-icon-button', onclick: () => dialog.close() }, '×')),
+    h('div', { class: 'v3-form-grid' },
+      h('label', {}, '任务名称', titleInput), h('label', {}, '模块', moduleInput), h('label', {}, '优先级', priority), h('label', {}, '预计分钟', minutesInput), h('label', { class: 'span-2' }, '原因', reason),
+    ),
+    h('div', { class: 'v3-dialog-actions' }, h('button', { class: 'v3-secondary-button', onclick: () => dialog.close() }, '取消'), h('button', { class: 'v3-primary-button', onclick: async () => {
+      if (!titleInput.value.trim()) return alert('请填写任务名称');
+      await jpost('/api/tasks', {
+        task_date: new Date().toISOString().slice(0, 10), priority: priority.value, title: titleInput.value.trim(), module: moduleInput.value.trim() || null,
+        reason_md: reason.value.trim() || null, est_minutes: Number(minutesInput.value || 0), steps: [], done_criteria_md: '完成任务并形成真实记录', node_slugs: [],
+      });
+      dialog.close();
+      await rerender();
+    } }, '加入队列')),
+  );
+  document.body.append(dialog);
+  dialog.addEventListener('close', () => dialog.remove(), { once: true });
+  dialog.showModal();
+}
+
+export async function renderToday(activeFilter = 'all') {
+  const tasks = await api(`/api/tasks?date=${new Date().toISOString().slice(0, 10)}`);
+  const rerender = async () => renderToday(activeFilter);
+  const counts = {
+    all: tasks.length,
+    P0: tasks.filter((x) => x.priority === 'P0' && x.status !== 'done').length,
+    P1: tasks.filter((x) => x.priority === 'P1' && x.status !== 'done').length,
+    P2: tasks.filter((x) => x.priority === 'P2' && x.status !== 'done').length,
+    done: tasks.filter((x) => x.status === 'done').length,
+  };
+  const filtered = tasks.filter((task) => activeFilter === 'all' ? true : activeFilter === 'done' ? task.status === 'done' : task.priority === activeFilter && task.status !== 'done');
+  clear(main).append(
+    h('div', { class: 'v3-page-heading' },
+      h('div', {}, h('span', {}, 'DAILY EXECUTION'), h('h1', { class: 'page-title' }, '今日任务推进队列'), h('p', {}, '任务不是清单展示，而是“为什么做 → 怎么做 → 完成标准 → 计时记录”的执行入口。')),
+      h('div', { class: 'v3-heading-actions' }, h('button', { class: 'v3-secondary-button', onclick: async () => { await jpost('/api/tasks/generate', {}); await rerender(); } }, '重新校准'), h('button', { class: 'v3-primary-button', onclick: () => addTaskDialog(rerender) }, '+ 新增任务')),
+    ),
+    todayStats(tasks),
+    h('div', { class: 'v3-filter-tabs' }, ...[
+      ['all', `全部 ${counts.all}`], ['P0', `P0 ${counts.P0}`], ['P1', `P1 ${counts.P1}`], ['P2', `P2 ${counts.P2}`], ['done', `已完成 ${counts.done}`],
+    ].map(([key, label]) => h('button', { class: activeFilter === key ? 'active' : '', onclick: () => renderToday(key) }, label))),
+    h('section', { class: 'v3-today-list' }, ...(filtered.length ? filtered.map((task) => todayTaskCard(task, rerender)) : [h('div', { class: 'v3-card v3-empty' }, '当前筛选下没有任务。')]))
+  );
 }

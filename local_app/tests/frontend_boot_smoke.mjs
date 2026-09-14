@@ -33,6 +33,7 @@ globalThis.document = {
   querySelectorAll(sel) { return sel === '.side-nav a[data-path]' ? [nav] : []; },
 };
 globalThis.location = { href: '', search: '' };
+globalThis.history = { replaceState() {} };
 globalThis.localStorage = { data: new Map(), getItem(k) { return this.data.get(k) ?? null; }, setItem(k, v) { this.data.set(k, String(v)); }, removeItem(k) { this.data.delete(k); } };
 globalThis.confirm = () => true;
 globalThis.alert = () => {};
@@ -43,7 +44,7 @@ const dashboard = {
     { code: 'national', days_left: 75, date: '2026-11-29', is_official: false },
   ],
   timeline: { current_week: 1, weeks: [{ no: 1, start: '2026-09-14', end: '2026-09-20', theme: '恢复', status: 'current' }] },
-  phase: { name: '系统恢复', code: 'P1', criteria: [], can_advance: false, blocking_count: 0 },
+  phase: { name: '系统恢复', code: 'P1', goal_md: '恢复核心方法', criteria: [], can_advance: false, blocking_count: 0 },
   week: { target_hours: 22, actual_seconds: 0, deep_ratio: 0, questions: 0, reviews_due: 0, by_day: [] },
   tasks: [], modules: { guangdong: [], national: [] }, issues: [],
 };
@@ -54,16 +55,20 @@ globalThis.fetch = async (url) => {
   else if (u.includes('/api/dashboard')) data = dashboard;
   else if (u.includes('/api/tasks')) data = [];
   else if (u.includes('/api/knowledge/tree')) data = [];
+  else if (u.includes('/api/coach/config')) data = { configured: false, model: 'deepseek-v4-flash' };
   return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
 };
 
 await import('../static/js/app.js');
 await new Promise((resolve) => setTimeout(resolve, 100));
 if (!main.children.length) throw new Error('app boot did not replace loading shell');
-if (!String(main.children[0]?.className || '').includes('dashboard-overview')) {
+if (!String(main.children[0]?.className || '').includes('v3-page-heading')) {
   throw new Error(`unexpected first dashboard node: ${main.children[0]?.className}`);
 }
-if (main.children.length < 2) throw new Error('dashboard did not render content after dashboard hero');
+const classes = main.children.map((node) => String(node?.className || '')).join(' ');
+if (!classes.includes('v3-milestone-hero')) throw new Error('Gemini V3 milestone hero did not render');
+if (!classes.includes('v3-kpi-grid')) throw new Error('Gemini V3 KPI grid did not render');
+if (main.children.length < 5) throw new Error('dashboard did not render dense V3 content');
 
 const { sanitizeZenText } = await import('../static/js/privacy.js');
 const sample = sanitizeZenText('2027 公考私教 · 广东省考 · 国考 · 公务员考试 · 行测 · 申论 · 粉笔真题 · 错题复训');

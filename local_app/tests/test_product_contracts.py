@@ -40,25 +40,28 @@ def test_deepseek_coach_is_global_and_not_hidden_behind_an_experimental_flag():
     assert '当前工作台界面上下文' in coach_router
 
 
-def test_global_focus_widget_replaces_page_bound_timer_controls():
+def test_focus_is_small_global_widget_and_timer_page_is_analytics_only():
     template = read('templates/index.html')
     app = read('static/js/app.js')
     focus = read('static/js/focus_widget.js')
-    timer_router = read('routers/timer.py')
+    analytics_page = read('static/js/pages/study_analytics.js')
+    analytics_router = read('routers/analytics.py')
     assert 'id="global-focus-root"' in template
     assert 'initFocusWidget' in app
-    assert "case '/timer': return renderFocusHistoryPage();" in app
-    assert '开始' in focus
-    assert '暂停' in focus
-    assert '终止' in focus
-    assert '记录' in focus
-    assert "/api/timer/discard" in focus
+    assert "case '/timer': result = await renderStudyAnalytics();" in app
     assert 'window.startGlobalFocus' in focus
-    assert "@r.get('/study/sessions')" in timer_router
+    assert '打开小计时器' in template
+    assert '学习投入看板' in analytics_page
+    assert '/api/analytics/study?days=90' in analytics_page
+    assert "@r.get('/study')" in analytics_router
+    assert '学习活动热力图' in analytics_page
+    assert '每次学习记录' in analytics_page
 
 
 def test_trusted_pdf_import_auto_ingests_and_backend_schedules_skill_ai():
     import_js = read('static/js/pages/import.js')
+    app = read('static/js/app.js')
+    drop = read('static/js/pdf_drop.js')
     training = read('routers/training.py')
     mistake_ai = read('services/mistake_ai.py')
     assert 'res.needs_review === 0' in import_js
@@ -69,6 +72,41 @@ def test_trusted_pdf_import_auto_ingests_and_backend_schedules_skill_ai():
     assert 'background_tasks.add_task(analyze_many_mistakes, mistake_ids)' in training
     assert 'build_system_prompt(query_text)' in mistake_ai
     assert '优先服从系统提示里检索到的本地 Skill / V2 方法材料' in mistake_ai
+    assert 'initPdfDropZone' in app
+    assert "zone.addEventListener('drop'" in drop
+    assert 'DataTransfer' in drop
+
+
+def test_question_ai_is_canonical_persistent_and_wrong_questions_are_required():
+    migration = read('migrations/003_question_ai_analysis.sql')
+    router = read('routers/question_ai.py')
+    service = read('services/question_ai.py')
+    training_js = read('static/js/pages/training.js')
+    coach_router = read('routers/coach.py')
+    assert 'CREATE TABLE IF NOT EXISTS question_ai_analysis' in migration
+    assert 'bank_id INTEGER NOT NULL UNIQUE' in migration
+    assert 'trg_mistake_requires_question_ai' in migration
+    assert 'Upgrade existing user data' in migration
+    assert "r = APIRouter(prefix='/api/question-ai'" in router
+    assert 'analyze_bank_question' in service
+    assert 'required_bank_ids' in service
+    assert '错题解析任务不会丢失' in training_js
+    assert 'AI 解析这道题' in training_js
+    assert '/api/question-ai/' in training_js
+    assert 'analyze_pending_required' in coach_router
+
+
+def test_question_performance_dashboard_uses_sample_and_timing_confidence():
+    progress = read('static/js/pages/progress.js')
+    analytics = read('routers/analytics.py')
+    template = read('templates/index.html')
+    assert '作答表现看板' in progress
+    assert '细分题型矩阵' in progress
+    assert '优先补强题型' in progress
+    assert '可靠计时样本' in progress
+    assert "sample_level'] = 'stable' if n >= 20 else 'usable' if n >= 8 else 'thin'" in analytics
+    assert 'duration_is_estimated=0' in analytics
+    assert '作答表现看板' in template
 
 
 def test_knowledge_page_is_progressive_card_learning_not_default_longform():
@@ -84,6 +122,40 @@ def test_knowledge_page_is_progressive_card_learning_not_default_longform():
     assert 'knowledge-signal-chip' in css
     assert 'knowledge-recovery-grid' in css
     assert 'knowledge-method-card' in css
+
+
+def test_missing_formal_nodes_are_rebuilt_before_seed_and_ci_lint():
+    generator = read('tools/generate_missing_nodes.py')
+    workflow = read('../.github/workflows/workbench-ci.yml')
+    start_bat = read('start.bat')
+    start_sh = read('start.sh')
+    assert 'GUIDES = {' in generator
+    assert "'quant-number-sequence'" in generator
+    assert "'science-force-circuit'" in generator
+    assert "'sl-essay'" in generator
+    assert 'build_missing_nodes' in generator
+    assert 'python tools/generate_missing_nodes.py' in workflow
+    assert 'tools\\generate_missing_nodes.py' in start_bat
+    assert 'tools/generate_missing_nodes.py' in start_sh
+
+
+def test_reviewed_github_skills_are_real_retrieval_documents_not_just_catalog_entries():
+    service = read('services/gongkao_skill.py')
+    sources = read('skills/gongkao-method-coach/sources.json')
+    extract = read('content/skill_extracts/github_skill_fusion.md')
+    assert 'load_skill_documents' in service
+    assert 'skill_secondary' in service
+    assert 'load_method_documents() + load_node_documents() + load_skill_documents()' in service
+    for repo in (
+        'KeWang0622/kaogong-skill',
+        'tyf152119-web/wangyou-honglingjin-perspective',
+        'WangJunqing-coder/huasheng13-skill',
+        'Suny0u17g/xiaop-data-analysis-skill',
+    ):
+        assert repo in sources
+    assert '候选差距决定够用精度' in extract
+    assert '资料分析六步法' in extract
+    assert 'heihei999 / huasheng-mcp' in extract
 
 
 def test_two_device_git_checkpoint_sync_is_global_private_and_secret_safe():
@@ -112,34 +184,23 @@ def test_two_device_git_checkpoint_sync_is_global_private_and_secret_safe():
     assert 'study-before-sync-' in sync_service
 
 
-def test_civil_gemini2_visual_baseline_and_views_are_loaded():
+def test_civil_gemini2_visual_baseline_and_v3_dashboards_are_loaded():
     app_css = read('static/css/app.css')
     visual = read('static/css/civil_gemini_exact.css')
-    views = read('static/css/civil_gemini_views.css')
-    methods_css = read('static/css/civil_gemini_methods.css')
-    training_css = read('static/css/civil_gemini_training.css')
-    methods_js = read('static/js/pages/methods.js')
-    training_js = read('static/js/pages/training.js')
+    v3 = read('static/css/workbench_v3.css')
+    dashboard = read('static/js/pages/dashboard.js')
+    plan = read('static/js/pages/plan.js')
+    training = read('static/js/pages/training.js')
     template = read('templates/index.html')
     assert "@import url('./civil_gemini_exact.css');" in app_css
-    assert "@import url('./civil_gemini_views.css');" in app_css
-    assert "@import url('./civil_gemini_methods.css');" in app_css
-    assert "@import url('./civil_gemini_training.css');" in app_css
-    assert "@import url('./civil_gemini_mistakes.css');" in app_css
-    assert "@import url('./civil_gemini_review.css');" in app_css
+    assert "@import url('./workbench_v3.css');" in app_css
     assert '--sidebar-w:256px' in visual
-    assert 'global-coach-drawer' in visual
-    assert 'focus-popover' in visual
-    assert 'linear-gradient(90deg,#1c1917' in visual
-    assert 'today-stat-grid' in views
-    assert 'coach-layout' in views
-    assert 'method-accordion-card' in methods_css
-    assert 'method-accordion-card' in methods_js
-    assert 'cg-training-batch-card' in training_css
-    assert 'cg-training-batch-card' in training_js
-    assert 'cg-question-bank-toolbar' in training_css
-    assert 'cg-question-bank-row' in training_js
-    assert 'cg-question-modal-card' in training_css
-    assert 'cg-question-modal-card' in training_js
-    assert '历史正确率' in training_js
-    assert '/static/css/gemini_v2.css' in template
+    assert '.v3-milestone-hero' in v3
+    assert '.global-coach-drawer' in v3
+    assert '.question-ai-panel' in v3
+    assert '本周学习时长分布' in dashboard
+    assert '今日推进队列' in dashboard
+    assert '13 周备考路线' in dashboard
+    assert '7 日攻坚日程' in plan
+    assert 'AI 必做错题解析' in training
+    assert '学习投入看板' in template
