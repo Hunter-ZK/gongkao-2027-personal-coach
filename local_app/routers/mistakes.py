@@ -17,9 +17,10 @@ def mistakes(status:str|None=None,module:str|None=None,due:bool=False):
     if status:wh.append('m.status=?');args.append(status)
     if module:wh.append('q.module=?');args.append(module)
     if due:wh.append("(m.next_review_at IS NULL OR date(m.next_review_at)<=date('now'))")
-    sql="""SELECT m.*,q.seq,q.module,q.subtype,q.stem_md,q.options_json,q.option_images_json,q.correct_answer,q.user_answer,q.node_slug FROM mistake m JOIN question q ON q.id=m.question_id"""
+    sql="""SELECT m.*,q.seq,q.module,q.subtype,q.stem_md,q.images_json,q.options_json,q.option_images_json,q.correct_answer,q.user_answer,q.node_slug FROM mistake m JOIN question q ON q.id=m.question_id"""
     rows=query(sql+(' WHERE '+' AND '.join(wh) if wh else '')+' ORDER BY COALESCE(m.next_review_at,m.first_wrong_at),m.id',args)
-    for x in rows:x['options']=jload(x['options_json'],{});x['option_images']=jload(x['option_images_json'],{})
+    for x in rows:
+        x['options']=jload(x['options_json'],{});x['option_images']=jload(x['option_images_json'],{});x['images']=jload(x['images_json'],[])
     return rows
 @r.get('/mistakes/{mid}')
 def mistake(mid:int):
@@ -68,6 +69,6 @@ async def paste_image(mid:int,file:UploadFile=File(...)):
     out=base/f'mistake-{mid}-{Path(file.filename or "image.png").name}';out.write_bytes(await file.read())
     q=query_one('SELECT question_id FROM mistake WHERE id=?',(mid,));
     if not q:raise HTTPException(404,'错题不存在')
-    old=query_one('SELECT images_json FROM question WHERE id=?',(q['question_id'],));imgs=jload(old['images_json'],[]);imgs.append(str(out.relative_to(Path(__file__).resolve().parents[1])))
+    old=query_one('SELECT images_json FROM question WHERE id=?',(q['question_id'],));imgs=jload(old['images_json'],[]);imgs.append(str(out.relative_to(Path(__file__).resolve().parents[1]/'data'/'images')).replace('\\','/'))
     with transaction() as c:c.execute('UPDATE question SET images_json=? WHERE id=?',(jdump(imgs),q['question_id']))
     return {'ok':True,'path':imgs[-1]}
