@@ -9,6 +9,7 @@ import { renderProgress } from './pages/progress.js';
 import { renderMethods } from './pages/methods.js';
 import { renderSettings } from './pages/settings.js';
 import { renderCoachPage } from './pages/coach.js';
+import { initGlobalCoach } from './global_coach.js';
 import { initZenMode, toggleZenMode, zenModeEnabled } from './privacy.js';
 
 const sidebar = document.querySelector('.sidebar');
@@ -120,7 +121,13 @@ document.addEventListener('keydown', async (event) => {
     const target = routes[event.key.toLowerCase()];
     if (target) location.href = target;
   }
-  if (page === '/review' && ['a', 'b', 'c', 'd'].includes(event.key.toLowerCase())) {
+  if (
+    page === '/review'
+    && !event.altKey
+    && !event.ctrlKey
+    && !event.metaKey
+    && ['a', 'b', 'c', 'd'].includes(event.key.toLowerCase())
+  ) {
     setReviewAnswer(event.key.toUpperCase());
   }
 });
@@ -137,4 +144,5 @@ if (zenButton) {
     syncZenButton();
   };
 }
+initGlobalCoach();
 boot();
