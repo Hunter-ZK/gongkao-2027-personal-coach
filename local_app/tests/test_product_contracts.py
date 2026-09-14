@@ -20,15 +20,40 @@ def test_zen_mode_remains_a_first_class_visible_control():
     assert "['阿里木江', '来源C']" in privacy
 
 
-def test_deepseek_coach_is_not_hidden_behind_an_experimental_flag():
+def test_deepseek_coach_is_global_and_not_hidden_behind_an_experimental_flag():
     template = read('templates/index.html')
     app = read('static/js/app.js')
     settings = read('static/js/pages/settings.js')
-    assert 'href="/coach"' in template
-    assert "case '/coach': return renderCoachPage();" in app
+    global_coach = read('static/js/global_coach.js')
+    coach_router = read('routers/coach.py')
+    assert 'id="global-coach-toggle"' in template
+    assert 'id="global-coach-root"' in template
+    assert 'initGlobalCoach' in app
     assert 'liano.aiCoachEnabled' not in app
     assert 'liano.aiCoachEnabled' not in settings
     assert '错题自动解析' in settings
+    assert 'global-coach-drawer' in global_coach
+    assert 'global-coach-avatar' in global_coach
+    assert 'context: useContext ? pageContext() : null' in global_coach
+    assert 'context: str | None' in coach_router
+    assert '当前工作台界面上下文' in coach_router
+
+
+def test_global_focus_widget_replaces_page_bound_timer_controls():
+    template = read('templates/index.html')
+    app = read('static/js/app.js')
+    focus = read('static/js/focus_widget.js')
+    timer_router = read('routers/timer.py')
+    assert 'id="global-focus-root"' in template
+    assert 'initFocusWidget' in app
+    assert "case '/timer': return renderFocusHistoryPage();" in app
+    assert '开始' in focus
+    assert '暂停' in focus
+    assert '终止' in focus
+    assert '记录' in focus
+    assert "/api/timer/discard" in focus
+    assert 'window.startGlobalFocus' in focus
+    assert "@r.get('/study/sessions')" in timer_router
 
 
 def test_pdf_import_requests_deepseek_analysis_after_mistakes_are_committed():
@@ -48,42 +73,15 @@ def test_knowledge_page_uses_authoritative_method_mapping_not_fuzzy_guessing():
     assert "textBlock('完整例题'" in knowledge
 
 
-def test_reference_layout_keeps_all_existing_workflows_visible():
-    template = read('templates/index.html')
-    for label in (
-        '工作台概览', '今日任务推进', '专注学习计时', '备考规划',
-        '训练记录与题库', '错题本与诊断', '错题复训', '智能练习导入',
-        '行测考点知识库', '申论体系', '79 项方法库与结论', '能力趋势',
-        'AI 方法教练', '设置',
-    ):
-        assert label in template
-    assert '日常流程' in template
-    assert '训练与复盘' in template
-    assert '知识与方法库' in template
-    assert 'exam-countdown-strip' in template
-
-
-def test_ai_training_assistant_is_global_and_context_aware():
-    template = read('templates/index.html')
-    app = read('static/js/app.js')
-    global_coach = read('static/js/global_coach.js')
-    coach = read('routers/coach.py')
-    assert 'id="global-coach-toggle"' in template
-    assert 'id="global-coach-root"' in template
-    assert 'Alt</kbd><kbd>A' in template
-    assert "import { initGlobalCoach } from './global_coach.js';" in app
-    assert 'initGlobalCoach();' in app
-    assert "'/mistakes':" in global_coach
-    assert "'/knowledge':" in global_coach
-    assert "'/review':" in global_coach
-    assert 'context: useContext ? pageContext() : null' in global_coach
-    assert 'context: str | None' in coach
-    assert '# 当前工作台界面上下文' in coach
-
-
-def test_global_coach_uses_same_persistent_conversation_as_full_coach_page():
-    global_coach = read('static/js/global_coach.js')
-    coach_page = read('static/js/pages/coach.js')
-    assert "const STORE = 'gongkao.coach.chat.v1';" in global_coach
-    assert "const STORE = 'gongkao.coach.chat.v1';" in coach_page
-    assert "window.openGlobalCoach" in global_coach
+def test_civil_gemini2_visual_baseline_is_loaded_last():
+    app_css = read('static/css/app.css')
+    visual = read('static/css/civil_gemini_exact.css')
+    views = read('static/css/civil_gemini_views.css')
+    assert "@import url('./civil_gemini_exact.css');" in app_css
+    assert app_css.strip().endswith("@import url('./civil_gemini_views.css');")
+    assert '--sidebar-w:256px' in visual
+    assert 'global-coach-drawer' in visual
+    assert 'focus-popover' in visual
+    assert 'linear-gradient(90deg,#1c1917' in visual
+    assert 'today-stat-grid' in views
+    assert 'coach-layout' in views

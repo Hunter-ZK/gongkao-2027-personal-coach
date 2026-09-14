@@ -1,4 +1,4 @@
-import { page, loadTimer, err, renderTimerPage, api, timerState, toggleTimer } from './runtime.js';
+import { page, loadTimer, err, api } from './runtime.js';
 import { renderDashboard, renderToday } from './pages/dashboard.js';
 import { renderImport } from './pages/import.js';
 import { renderTrainings, renderQuestionBank } from './pages/training.js';
@@ -10,6 +10,7 @@ import { renderMethods } from './pages/methods.js';
 import { renderSettings } from './pages/settings.js';
 import { renderCoachPage } from './pages/coach.js';
 import { initGlobalCoach } from './global_coach.js';
+import { initFocusWidget, renderFocusHistoryPage } from './focus_widget.js';
 import { initZenMode, toggleZenMode, zenModeEnabled } from './privacy.js';
 
 const sidebar = document.querySelector('.sidebar');
@@ -46,6 +47,27 @@ async function loadKnowledgeProgress() {
   }
 }
 
+async function loadSidebarStage() {
+  const name = document.querySelector('#sidebar-stage-name');
+  const progress = document.querySelector('#sidebar-week-progress');
+  const fill = document.querySelector('#sidebar-progress-fill');
+  if (!name || !progress || !fill) return;
+  try {
+    const data = await api('/api/dashboard');
+    const phaseName = data?.phase?.name || '当前阶段';
+    const phaseCode = data?.phase?.code || data?.timeline?.phase || '';
+    name.textContent = `${phaseCode ? `${phaseCode} ` : ''}${phaseName}`.trim();
+    const actual = Number(data?.week?.actual_seconds || 0) / 3600;
+    const target = Number(data?.week?.target_hours || 0);
+    progress.textContent = target ? `${actual.toFixed(1)}h / ${target.toFixed(1)}h` : `${actual.toFixed(1)}h`;
+    fill.style.width = `${target ? Math.min(100, Math.round((actual / target) * 100)) : 0}%`;
+  } catch (_) {
+    name.textContent = '当前阶段';
+    progress.textContent = '—';
+    fill.style.width = '0%';
+  }
+}
+
 function setToday() {
   const label = document.querySelector('.today-label');
   if (!label) return;
@@ -59,10 +81,11 @@ function setToday() {
 async function boot() {
   try {
     await loadTimer();
+    initFocusWidget();
     switch (page) {
       case '/': return renderDashboard();
       case '/today': return renderToday();
-      case '/timer': return renderTimerPage();
+      case '/timer': return renderFocusHistoryPage();
       case '/trainings': return renderTrainings();
       case '/questions': {
         history.replaceState(null, '', '/trainings?tab=bank');
@@ -86,7 +109,7 @@ async function boot() {
 }
 
 let gPending = false;
-document.addEventListener('keydown', async (event) => {
+document.addEventListener('keydown', (event) => {
   if (event.altKey && event.key.toLowerCase() === 'z') {
     setTimeout(syncZenButton, 0);
     return;
@@ -102,13 +125,9 @@ document.addEventListener('keydown', async (event) => {
     sidebar?.classList.remove('mobile-open');
     return;
   }
-  if (event.key.toLowerCase() === 't') {
-    if (timerState.status === 'running' || timerState.status === 'paused') {
-      event.preventDefault();
-      await toggleTimer();
-    } else {
-      location.href = '/timer';
-    }
+  if (event.key.toLowerCase() === 't' && !event.altKey && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault();
+    window.openGlobalFocus?.();
     return;
   }
   if (event.key.toLowerCase() === 'g') {
@@ -135,6 +154,7 @@ document.addEventListener('keydown', async (event) => {
 markActiveNavigation();
 setToday();
 loadKnowledgeProgress();
+loadSidebarStage();
 if (menu && sidebar) menu.onclick = () => sidebar.classList.toggle('mobile-open');
 initZenMode();
 syncZenButton();

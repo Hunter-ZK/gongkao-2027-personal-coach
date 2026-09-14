@@ -17,18 +17,18 @@
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body data-page="{{ page_path }}">
-  <div class="narrow-warning">当前窗口较窄，部分数据表会横向滚动。</div>
+  <div class="narrow-warning">当前窗口较窄，部分数据区域会横向滚动。</div>
 
   <header class="topbar app-header">
     <div class="top-left app-brand-row">
       <button class="mobile-menu icon-button" aria-label="打开菜单" type="button">
         <svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#menu"></use></svg>
       </button>
-      <a class="header-brand" href="/" aria-label="返回总览">
+      <a class="header-brand" href="/" aria-label="返回工作台">
         <span class="header-brand-mark" aria-hidden="true">27</span>
         <span class="header-brand-copy">
           <strong>2027 公考备考工作台</strong>
-          <small>Personal study & knowledge workstation</small>
+          <small>Guangdong & National Civil Service Track</small>
         </span>
       </a>
       <div class="exam-countdown-strip">
@@ -45,10 +45,11 @@
     </div>
 
     <div class="top-actions">
-      <div id="mini-timer" class="mini-timer"><button class="timer-quick" type="button">开始计时</button></div>
-      <button id="global-coach-toggle" class="coach-top-button" type="button" data-zen-ignore="1">
+      <div id="mini-timer" class="mini-timer" hidden></div>
+      <div id="global-focus-root" data-zen-ignore="1"></div>
+      <button id="global-coach-toggle" class="coach-top-button" type="button">
         <svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#chat"></use></svg>
-        <span>AI 训练助手</span>
+        <span>AI 教练</span>
       </button>
       <button id="zen-toggle" class="top-mode-button" type="button" data-zen-ignore="1" aria-pressed="false">
         <svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#focus"></use></svg>
@@ -66,30 +67,28 @@
       <div class="nav-label">日常流程</div>
       <a href="/" data-path="/"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#grid"></use></svg><span>工作台概览</span></a>
       <a href="/today" data-path="/today"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#tasks"></use></svg><span>今日任务推进</span></a>
-      <a href="/timer" data-path="/timer"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#stopwatch"></use></svg><span>专注学习计时</span></a>
-      <a href="/plan" data-path="/plan"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#calendar"></use></svg><span>备考规划</span></a>
+      <a href="/timer" data-path="/timer"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#stopwatch"></use></svg><span>专注记录</span></a>
+      <a href="/plan" data-path="/plan"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#calendar"></use></svg><span>周度攻坚日程</span></a>
 
       <div class="nav-label">训练与复盘</div>
       <a href="/trainings" data-path="/trainings"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#table"></use></svg><span>训练记录与题库</span></a>
-      <a href="/mistakes" data-path="/mistakes"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#mistake"></use></svg><span>错题本与诊断</span></a>
-      <a href="/review" data-path="/review"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#review"></use></svg><span>错题复训</span></a>
+      <a href="/mistakes" data-path="/mistakes"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#mistake"></use></svg><span>错题本与缺陷库</span></a>
+      <a href="/review" data-path="/review"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#review"></use></svg><span>错题智能复训</span></a>
       <a href="/import" data-path="/import"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#import"></use></svg><span>智能练习导入</span></a>
 
       <div class="nav-label">知识与方法库</div>
       <a href="/knowledge" data-path="/knowledge"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#book"></use></svg><span>行测考点知识库</span><em id="knowledge-progress"></em></a>
-      <a href="/shenlun" data-path="/shenlun"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#pen"></use></svg><span>申论体系</span></a>
-      <a href="/methods" data-path="/methods"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#bookmark"></use></svg><span>79 项方法库与结论</span></a>
+      <a href="/shenlun" data-path="/shenlun"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#pen"></use></svg><span>申论规范与语料</span></a>
+      <a href="/methods" data-path="/methods"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#bookmark"></use></svg><span>79 项考场方法库</span></a>
+      <a href="/coach" data-path="/coach"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#chat"></use></svg><span>AI 专属方法教练</span><em class="nav-ai-badge">AI</em></a>
       <a href="/progress" data-path="/progress"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#trend"></use></svg><span>能力趋势</span></a>
-
-      <div class="nav-label">AI 支持</div>
-      <a href="/coach" data-path="/coach"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#chat"></use></svg><span>AI 方法教练</span><em class="nav-ai-badge">AI</em></a>
     </nav>
 
     <div class="sidebar-bottom">
       <div class="sidebar-stage-card">
-        <span>当前工作流</span>
-        <strong>学习 → 训练 → 错题 → 复训</strong>
-        <small>DeepSeek 作为贯穿式训练助手，不改变原有数据流程。</small>
+        <div class="sidebar-stage-row"><span>当前阶段</span><strong id="sidebar-stage-name">P1 快速恢复</strong></div>
+        <div class="sidebar-stage-row"><span>本周进度</span><strong id="sidebar-week-progress">—</strong></div>
+        <div class="sidebar-progress-track"><span id="sidebar-progress-fill"></span></div>
       </div>
       <a class="sidebar-utility" href="/settings"><svg class="utility-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#sliders"></use></svg><span>设置</span></a>
     </div>
@@ -107,7 +106,7 @@
       <div><kbd>Ctrl / Cmd</kbd><kbd>K</kbd><span>快捷键</span></div>
       <div><kbd>Alt</kbd><kbd>A</kbd><span>AI 训练助手</span></div>
       <div><kbd>Alt</kbd><kbd>Z</kbd><span>禅模式</span></div>
-      <div><kbd>T</kbd><span>学习计时</span></div>
+      <div><kbd>T</kbd><span>打开专注器</span></div>
       <div><kbd>G</kbd><kbd>D</kbd><span>总览</span></div>
       <div><kbd>G</kbd><kbd>T</kbd><span>今日任务</span></div>
       <div><kbd>G</kbd><kbd>K</kbd><span>行测体系</span></div>

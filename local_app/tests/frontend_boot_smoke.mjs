@@ -60,8 +60,10 @@ globalThis.fetch = async (url) => {
 await import('../static/js/app.js');
 await new Promise((resolve) => setTimeout(resolve, 100));
 if (!main.children.length) throw new Error('app boot did not replace loading shell');
-if (main.children[0]?.className !== 'page-head') throw new Error(`unexpected first dashboard node: ${main.children[0]?.className}`);
-if (main.children.length < 2) throw new Error('dashboard did not render content after page heading');
+if (!String(main.children[0]?.className || '').includes('dashboard-overview')) {
+  throw new Error(`unexpected first dashboard node: ${main.children[0]?.className}`);
+}
+if (main.children.length < 2) throw new Error('dashboard did not render content after dashboard hero');
 
 const { sanitizeZenText } = await import('../static/js/privacy.js');
 const sample = sanitizeZenText('2027 公考私教 · 广东省考 · 国考 · 公务员考试 · 行测 · 申论 · 粉笔真题 · 错题复训');

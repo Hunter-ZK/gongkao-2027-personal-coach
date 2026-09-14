@@ -1,0 +1,697 @@
+/* Page-level mapping of the existing product data to the Civil_gemini2 view layouts. */
+.dashboard-phase-meta {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+
+.dashboard-phase-meta span {
+  padding:3px 9px;
+  border:1px solid rgba(251,191,36,.3);
+  border-radius:9999px;
+  background:rgba(251,191,36,.16);
+  color:#fcd34d;
+  font-family:var(--font-num);
+  font-size:10px;
+  font-weight:700;
+}
+
+.dashboard-phase-meta small {
+  color:#a8a29e;
+  font-family:var(--font-num);
+  font-size:10px;
+}
+
+.dashboard-task-section {
+  margin-top:24px;
+}
+
+.gemini-task-card {
+  display:block;
+}
+
+.gemini-task-main {
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.gemini-task-main > input[type="checkbox"] {
+  width:16px;
+  height:16px;
+  margin-top:4px;
+  accent-color:#1c1917;
+  cursor:pointer;
+}
+
+.gemini-task-copy {
+  flex:1;
+  min-width:0;
+}
+
+.gemini-task-meta {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:7px;
+  margin-bottom:6px;
+}
+
+.task-priority,
+.task-module-chip,
+.task-minute-chip {
+  padding:2px 7px;
+  border-radius:6px;
+  font-size:9.5px;
+}
+
+.task-priority {
+  font-family:var(--font-num);
+  font-weight:800;
+}
+
+.task-priority.P0 {
+  background:#ffe4e6;
+  color:#be123c;
+}
+
+.task-priority.P1 {
+  background:#fef3c7;
+  color:#b45309;
+}
+
+.task-priority.P2 {
+  background:#f5f5f4;
+  color:#57534e;
+}
+
+.task-module-chip {
+  background:#f5f5f4;
+  color:#57534e;
+  font-weight:600;
+}
+
+.task-minute-chip {
+  color:#78716c;
+  font-family:var(--font-num);
+}
+
+.gemini-task-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:12px;
+}
+
+.gemini-task-actions a {
+  text-decoration:none;
+}
+
+.gemini-task-detail {
+  margin:14px 0 0 28px;
+  padding-top:12px;
+  border-top:1px solid #f5f5f4;
+  color:#78716c;
+  font-size:10.5px;
+  line-height:1.65;
+}
+
+.gemini-task-detail > div + div {
+  margin-top:7px;
+}
+
+.gemini-task-detail strong {
+  margin-right:4px;
+  color:#44403c;
+}
+
+.gemini-task-detail ol {
+  margin:4px 0 0;
+  padding-left:18px;
+}
+
+.task-done-rule {
+  color:#047857;
+  font-weight:650;
+}
+
+.gemini-task-card.done {
+  background:rgba(250,250,249,.65);
+  opacity:.72;
+}
+
+.gemini-task-card.done h3 {
+  color:#78716c;
+  text-decoration:line-through;
+}
+
+.today-stat-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:18px;
+}
+
+.today-stat-card {
+  min-height:88px;
+  display:flex;
+  align-items:baseline;
+  gap:5px;
+  padding:16px;
+  border:1px solid #e7e5e4;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.025);
+}
+
+.today-stat-card span {
+  flex:1;
+  align-self:flex-start;
+  color:#78716c;
+  font-size:10.5px;
+}
+
+.today-stat-card strong {
+  color:#1c1917;
+  font-family:var(--font-num);
+  font-size:22px;
+}
+
+.today-stat-card.success strong {
+  color:#047857;
+}
+
+.today-stat-card small {
+  color:#78716c;
+  font-size:10px;
+}
+
+.today-filter-tabs {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:14px;
+  padding-bottom:10px;
+  overflow-x:auto;
+  border-bottom:1px solid #e7e5e4;
+}
+
+.today-filter-tab {
+  flex:0 0 auto;
+  min-height:31px;
+  padding:0 11px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:#78716c;
+  font-size:10.5px;
+  font-weight:650;
+}
+
+.today-filter-tab:hover {
+  background:#f5f5f4;
+  color:#1c1917;
+}
+
+.today-filter-tab.active {
+  background:#1c1917;
+  color:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+}
+
+.today-task-list {
+  gap:10px;
+}
+
+.today-empty strong,
+.today-empty p {
+  display:block;
+}
+
+.today-empty strong {
+  color:#1c1917;
+  font-size:12px;
+}
+
+.today-empty p {
+  margin:5px 0 0;
+  color:#78716c;
+  font-size:10.5px;
+}
+
+/* Training workspace mirrors Civil_gemini2's card-and-tab rhythm. */
+.training-detail-dialog {
+  width:min(880px,calc(100vw - 36px));
+  max-height:86vh;
+}
+
+.training-question-list {
+  display:grid;
+  gap:8px;
+}
+
+.training-question-row {
+  display:grid;
+  grid-template-columns:30px 1fr;
+  gap:10px;
+  padding:11px 12px;
+  border:1px solid #e7e5e4;
+  border-radius:10px;
+  background:#fff;
+}
+
+.answer-mark {
+  width:26px;
+  height:26px;
+  display:grid;
+  place-items:center;
+  border-radius:9999px;
+  font-size:10px;
+  font-weight:800;
+}
+
+.answer-mark.correct {
+  background:#ecfdf5;
+  color:#047857;
+}
+
+.answer-mark.wrong {
+  background:#fff1f2;
+  color:#be123c;
+}
+
+.training-question-row strong {
+  color:#1c1917;
+  font-size:11px;
+  line-height:1.55;
+}
+
+.training-question-row small {
+  display:block;
+  margin-top:4px;
+  color:#78716c;
+  font-size:9.5px;
+}
+
+/* Mistake workspace follows the left-list/right-diagnostic composition from the source UI. */
+.mistake-toolbar {
+  position:sticky;
+  top:76px;
+  z-index:10;
+}
+
+.mistake-list-card {
+  width:100%;
+  text-align:left;
+}
+
+.mistake-list-top,
+.mistake-list-bottom,
+.mistake-detail-kicker,
+.mistake-detail-actions,
+.answer-compare {
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+
+.mistake-list-top,
+.mistake-list-bottom {
+  justify-content:space-between;
+}
+
+.mistake-list-stem {
+  margin:8px 0;
+  color:#44403c;
+  font-size:10.5px;
+  line-height:1.55;
+}
+
+.mistake-list-bottom,
+.micro-label {
+  color:#78716c;
+  font-size:9px;
+}
+
+.mistake-detail-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:18px;
+  padding-bottom:16px;
+  border-bottom:1px solid #f5f5f4;
+}
+
+.mistake-detail-head h2 {
+  margin:8px 0 4px;
+  color:#1c1917;
+  font-size:17px;
+}
+
+.mistake-detail-head p {
+  margin:0;
+  color:#78716c;
+  font-size:10px;
+}
+
+.mistake-options-grid {
+  display:grid;
+  gap:7px;
+  margin-top:14px;
+}
+
+.mistake-option-card {
+  display:grid;
+  grid-template-columns:28px 1fr auto;
+  align-items:center;
+  gap:9px;
+  padding:10px 11px;
+  border:1px solid #e7e5e4;
+  background:#fafaf9;
+}
+
+.mistake-option-card.is-correct {
+  border-color:#a7f3d0;
+  background:#ecfdf5;
+}
+
+.mistake-option-card.is-wrong {
+  border-color:#fecdd3;
+  background:#fff1f2;
+}
+
+.option-letter {
+  font-family:var(--font-num);
+  font-weight:800;
+}
+
+.option-badge {
+  padding:2px 6px;
+  border-radius:6px;
+  font-size:9px;
+}
+
+.option-badge.correct {
+  background:#d1fae5;
+  color:#047857;
+}
+
+.option-badge.wrong {
+  background:#ffe4e6;
+  color:#be123c;
+}
+
+.answer-compare {
+  margin-top:12px;
+}
+
+.answer-box {
+  flex:1;
+  padding:10px 12px;
+  border:1px solid #e7e5e4;
+}
+
+.answer-box span,
+.answer-box strong {
+  display:block;
+}
+
+.answer-box span {
+  color:#78716c;
+  font-size:9px;
+}
+
+.answer-box strong {
+  margin-top:3px;
+  font-family:var(--font-num);
+  font-size:14px;
+}
+
+.answer-box.correct {
+  border-color:#a7f3d0;
+  background:#ecfdf5;
+  color:#047857;
+}
+
+.answer-box.wrong {
+  border-color:#fecdd3;
+  background:#fff1f2;
+  color:#be123c;
+}
+
+.mistake-diagnosis-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:14px;
+}
+
+.diagnosis-card {
+  padding:14px;
+  border:1px solid #e7e5e4;
+  background:#fafaf9;
+}
+
+.diagnosis-card h3 {
+  margin:0 0 8px;
+  color:#44403c;
+  font-size:10.5px;
+}
+
+.diagnosis-card p,
+.diagnosis-card textarea,
+.diagnosis-card select {
+  font-size:10.5px;
+  line-height:1.65;
+}
+
+/* Full coach page, using the same look as Civil_gemini2 CoachView while retaining configuration. */
+.coach-layout {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 290px;
+  gap:18px;
+  align-items:start;
+}
+
+.coach-chat.panel {
+  padding:16px;
+}
+
+.coach-suggestions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:12px;
+}
+
+.coach-suggestion {
+  padding:6px 9px;
+  border:1px solid #e7e5e4;
+  border-radius:8px;
+  background:#fff;
+  color:#57534e;
+  font-size:9.5px;
+}
+
+.coach-thread {
+  min-height:460px;
+  max-height:600px;
+  padding:8px 2px 14px;
+  overflow:auto;
+}
+
+.coach-welcome {
+  max-width:420px;
+  margin:70px auto;
+  text-align:center;
+}
+
+.coach-orb,
+.coach-avatar {
+  display:grid;
+  place-items:center;
+  border-radius:9999px;
+  font-family:var(--font-num);
+  font-weight:800;
+}
+
+.coach-orb {
+  width:44px;
+  height:44px;
+  margin:0 auto 12px;
+  background:#f59e0b;
+  color:#1c1917;
+}
+
+.coach-welcome h2 {
+  margin:0;
+  color:#1c1917;
+  font-size:15px;
+}
+
+.coach-welcome p {
+  color:#78716c;
+  font-size:10.5px;
+  line-height:1.65;
+}
+
+.coach-msg {
+  display:flex;
+  align-items:flex-start;
+  gap:9px;
+  margin-bottom:14px;
+}
+
+.coach-msg.user {
+  flex-direction:row-reverse;
+}
+
+.coach-avatar {
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  background:#f59e0b;
+  color:#1c1917;
+  font-size:9px;
+}
+
+.coach-msg.user .coach-avatar {
+  background:#1c1917;
+  color:#fff;
+}
+
+.coach-msg-main {
+  max-width:82%;
+  padding:12px 13px;
+  border:1px solid #e7e5e4;
+  border-radius:16px;
+  border-top-left-radius:6px;
+  background:#fafaf9;
+}
+
+.coach-msg.user .coach-msg-main {
+  border-color:#1c1917;
+  border-top-left-radius:16px;
+  border-top-right-radius:6px;
+  background:#1c1917;
+  color:#fff;
+}
+
+.coach-msg-meta {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:5px;
+  font-size:9px;
+}
+
+.coach-msg-text {
+  white-space:pre-wrap;
+  font-size:11.5px;
+  line-height:1.7;
+}
+
+.coach-cites {
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  margin-top:7px;
+}
+
+.coach-cites span {
+  padding:2px 6px;
+  border:1px solid #e7e5e4;
+  border-radius:9999px;
+  background:#fff;
+  color:#78716c;
+  font-size:8.5px;
+}
+
+.coach-composer {
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+  padding:7px;
+  border:1px solid #d6d3d1;
+  border-radius:14px;
+  background:#fff;
+}
+
+.coach-composer textarea {
+  flex:1;
+  min-height:58px;
+  padding:7px 8px;
+  border:0;
+  resize:none;
+}
+
+.coach-composer textarea:focus {
+  box-shadow:none;
+}
+
+.coach-composer-foot {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.coach-composer-foot > span {
+  display:none;
+}
+
+.coach-side {
+  display:grid;
+  gap:10px;
+}
+
+.coach-side .panel {
+  padding:14px;
+}
+
+.coach-status,
+.coach-rules,
+.coach-side p,
+.coach-side label {
+  font-size:9.5px;
+  line-height:1.6;
+}
+
+/* Review/import/planning pages inherit the same white-card product density. */
+.review-card,
+.import-proof,
+.proof-q-v2,
+.proof-material,
+.plan-card,
+.progress-card {
+  border:1px solid #e7e5e4;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.025);
+}
+
+.proof-q-v2,
+.proof-material {
+  padding:14px;
+}
+
+@media (max-width:900px) {
+  .today-stat-grid,
+  .mistake-diagnosis-grid,
+  .coach-layout {
+    grid-template-columns:1fr;
+  }
+
+  .coach-side {
+    order:2;
+  }
+
+  .mistake-detail-head {
+    flex-direction:column;
+  }
+}
