@@ -4,7 +4,10 @@ import { renderImport } from './pages/import.js';
 import { renderTrainings, renderQuestionBank } from './pages/training.js';
 import { renderMistakes, renderReview, setReviewAnswer } from './pages/mistakes.js';
 import { renderKnowledge } from './pages/knowledge.js';
-import { renderPlan, renderProgress, renderMethods, renderSettings } from './pages/support.js';
+import { renderPlan } from './pages/plan.js';
+import { renderProgress } from './pages/progress.js';
+import { renderMethods } from './pages/methods.js';
+import { renderSettings } from './pages/settings.js';
 import { renderCoachPage } from './pages/coach.js';
 import { initZenMode } from './privacy.js';
 
