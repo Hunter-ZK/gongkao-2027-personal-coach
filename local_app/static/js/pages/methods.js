@@ -60,7 +60,7 @@ function renderDetail(method) {
     h('section', { class: 'method-source-card' },
       h('h3', {}, '来源与证据'),
       h('p', {}, method.source_note || '—'),
-      h('small', {}, '说明：GitHub Skill 属于二次整理证据；只有本地材料明确标注一手证据时，才按老师本人方法表述。'),
+      h('small', {}, `${method.source_method_label || 'V2方法单元'} · GitHub Skill 属于二次整理证据；只有本地材料明确标注一手证据时，才按老师本人方法表述。`),
     ),
   );
 }
@@ -113,7 +113,7 @@ export async function renderXingceMethodSystem() {
 
   clear(main).append(title(
     '行测方法体系',
-    '80 个可独立学习、可被 AI 教练检索调用的方法。每个方法都必须回答：怎么识别、为什么有效、具体怎么做、什么时候失效。',
+    `${summary.total} 个由 V2 正文还原的正式方法单元，可独立学习，也可被 AI 教练检索调用。每个方法必须回答：怎么识别、为什么有效、具体怎么做、什么时候失效。`,
     'METHOD OPERATING SYSTEM',
     [h('a', { class: 'secondary', href: '/knowledge?view=nodes' }, '查看 30 个知识节点')],
   ));
@@ -121,7 +121,7 @@ export async function renderXingceMethodSystem() {
   main.append(h(
     'div',
     { class: 'kpi-grid' },
-    metric('可调用方法', String(summary.total), '个', 100, '✦', 'green'),
+    metric('正式方法单元', String(summary.total), '个', 100, '✦', 'green'),
     metric('资料分析', String(summary.counts?.['资料分析'] || 0), '个', null, 'Σ', 'cyan'),
     metric('判断 + 言语', String((summary.counts?.['判断推理'] || 0) + (summary.counts?.['言语理解'] || 0)), '个', null, '◇'),
     metric('数量 + 常识', String((summary.counts?.['数量关系'] || 0) + (summary.counts?.['常识判断'] || 0)), '个', null, '≡', 'amber'),
