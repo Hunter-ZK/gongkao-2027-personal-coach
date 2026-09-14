@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>{{ page_title }} · 2027 公考私教</title>
+  <script>try{if(localStorage.getItem('liano.zen')==='1'){document.documentElement.dataset.zen='1';document.title='Work Notes · Workspace'}}catch(e){}</script>
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body data-page="{{ page_path }}">
@@ -32,6 +33,7 @@
 
       <div class="nav-label">训练闭环</div>
       <a href="/trainings" data-path="/trainings"><span class="nav-ico">▤</span><span>训练记录</span></a>
+      <a href="/questions" data-path="/questions"><span class="nav-ico">□</span><span>题库</span></a>
       <a href="/mistakes" data-path="/mistakes"><span class="nav-ico">!</span><span>错题矩阵</span></a>
       <a href="/review" data-path="/review"><span class="nav-ico">↻</span><span>错题复训</span></a>
       <a href="/import" data-path="/import"><span class="nav-ico">⇧</span><span>真题导入</span></a>
@@ -70,6 +72,7 @@
         <div class="breadcrumb"><span>2027 备考</span><b>/</b><strong>{{ page_title }}</strong></div>
       </div>
       <div class="top-actions">
+        <button class="zen-toggle" type="button" aria-pressed="false" title="隐藏备考语义（Alt+Z）"><span class="zen-dot"></span><span class="zen-label">禅模式</span></button>
         <button class="command-pill" type="button" onclick="document.querySelector('#help-dialog').showModal()"><span>⌘</span><span>快捷键</span><kbd>?</kbd></button>
         <div id="mini-timer" class="mini-timer"><button class="timer-quick" data-action="timer-start-shortcut">开始专注</button></div>
         <div class="date-chip"><span class="date-dot"></span><span class="today-label"></span></div>
@@ -82,6 +85,7 @@
   <dialog id="help-dialog" class="command-dialog">
     <div class="dialog-head"><div><span class="eyebrow">Keyboard</span><h2>快捷操作</h2></div><button class="icon-button" onclick="this.closest('dialog').close()">×</button></div>
     <div class="shortcut-grid">
+      <div><kbd>Alt</kbd><kbd>Z</kbd><span>切换禅模式</span></div>
       <div><kbd>Ctrl / ⌘</kbd><kbd>K</kbd><span>打开快捷操作</span></div>
       <div><kbd>T</kbd><span>打开深度计时</span></div>
       <div><kbd>G</kbd><kbd>D</kbd><span>返回驾驶舱</span></div>
