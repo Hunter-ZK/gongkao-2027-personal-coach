@@ -57,21 +57,55 @@ def test_global_focus_widget_replaces_page_bound_timer_controls():
     assert "@r.get('/study/sessions')" in timer_router
 
 
-def test_pdf_import_requests_deepseek_analysis_after_mistakes_are_committed():
+def test_trusted_pdf_import_auto_ingests_and_backend_schedules_skill_ai():
     import_js = read('static/js/pages/import.js')
-    coach = read('routers/coach.py')
-    assert '/api/coach/analyze-training/' in import_js
-    assert '@r.post("/analyze-training/{training_id}")' in coach
-    assert 'background_tasks.add_task(analyze_many_mistakes, mistake_ids)' in coach
+    training = read('routers/training.py')
+    mistake_ai = read('services/mistake_ai.py')
+    assert 'res.needs_review === 0' in import_js
+    assert 'autoCommit(res.import_id, res)' in import_js
+    assert '固定版式核验通过' in import_js
+    assert 'BackgroundTasks' in training
+    assert '_schedule_mistake_ai' in training
+    assert 'background_tasks.add_task(analyze_many_mistakes, mistake_ids)' in training
+    assert 'build_system_prompt(query_text)' in mistake_ai
+    assert '优先服从系统提示里检索到的本地 Skill / V2 方法材料' in mistake_ai
 
 
-def test_knowledge_page_uses_authoritative_method_mapping_not_fuzzy_guessing():
+def test_knowledge_page_is_progressive_card_learning_not_default_longform():
     knowledge = read('static/js/pages/knowledge.js')
+    css = read('static/css/gemini_v2.css')
     assert 'method.node_slug === slug' in knowledge
     assert 'methodScore(' not in knowledge
-    assert 'V2 · GitHub Skill 融合方法正文' in knowledge
-    assert "textBlock('易错点 / 失效边界'" in knowledge
-    assert "textBlock('完整例题'" in knowledge
+    assert '30 秒快速恢复' in knowledge
+    assert '识别信号词库' in knowledge
+    assert '快速恢复' in knowledge and '标准学习' in knowledge and '深度理解' in knowledge
+    assert 'knowledge-longform-gate' in knowledge
+    assert '保留全部内容，不再默认铺满页面' in knowledge
+    assert 'knowledge-signal-chip' in css
+    assert 'knowledge-recovery-grid' in css
+    assert 'knowledge-method-card' in css
+
+
+def test_two_device_git_checkpoint_sync_is_global_and_secret_safe():
+    template = read('templates/index.html')
+    app = read('static/js/app.js')
+    settings = read('static/js/pages/settings.js')
+    sync_js = read('static/js/sync_widget.js')
+    sync_router = read('routers/sync.py')
+    sync_service = read('services/device_sync.py')
+    gitignore = read('.gitignore')
+    assert 'id="global-sync-root"' in template
+    assert 'gemini_v2.css' in template
+    assert 'initSyncWidget' in app
+    assert '公司 / 家里双设备同步' in settings
+    assert '/api/sync/push' in sync_js
+    assert '/api/sync/pull' in sync_js
+    assert '@r.post("/push")' in sync_router
+    assert '@r.post("/pull")' in sync_router
+    assert 'API Key' in sync_service or 'API keys' in sync_service
+    assert 'data/secrets.json' in gitignore
+    assert 'data/sync-state.json' in gitignore
+    assert 'study-before-sync-' in sync_service
 
 
 def test_civil_gemini2_visual_baseline_and_views_are_loaded():
@@ -82,6 +116,7 @@ def test_civil_gemini2_visual_baseline_and_views_are_loaded():
     training_css = read('static/css/civil_gemini_training.css')
     methods_js = read('static/js/pages/methods.js')
     training_js = read('static/js/pages/training.js')
+    template = read('templates/index.html')
     assert "@import url('./civil_gemini_exact.css');" in app_css
     assert "@import url('./civil_gemini_views.css');" in app_css
     assert "@import url('./civil_gemini_methods.css');" in app_css
@@ -101,3 +136,4 @@ def test_civil_gemini2_visual_baseline_and_views_are_loaded():
     assert 'cg-question-modal-card' in training_css
     assert 'cg-question-modal-card' in training_js
     assert '历史正确率' in training_js
+    assert '/static/css/gemini_v2.css' in template
