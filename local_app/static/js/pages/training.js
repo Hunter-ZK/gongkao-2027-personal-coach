@@ -44,7 +44,7 @@ function trainingQuestionPill(q) {
   },
     h('div', { class: 'training-pill-top' },
       h('strong', {}, `#${q.seq}`),
-      h('span', {}, q.is_correct ? '✓' : '×'),
+      h('span', {}, q.is_correct ? '对' : '错'),
     ),
     h('small', {}, q.subtype || q.module || '未分类'),
     h('div', { class: 'training-pill-answer' }, `${q.user_answer || '—'} → ${q.correct_answer || '—'}`),
@@ -61,7 +61,7 @@ function showQuestionPreview(q) {
   const options = optionEntries(q);
   dialog.append(
     h('div', { class: 'dialog-head' },
-      h('div', {}, h('h2', {}, `${q.module || '未分类'} · 第 ${q.seq} 题`), h('p', { class: 'subtle' }, q.subtype || '')), 
+      h('div', {}, h('h2', {}, `${q.module || '未分类'} · 第 ${q.seq} 题`), h('p', { class: 'subtle' }, q.subtype || '')),
       h('button', { class: 'icon-button', onclick: () => dialog.close(), 'aria-label': '关闭' }, '×'),
     ),
     h('div', { class: 'question-preview-body' },
