@@ -9,8 +9,11 @@ from typing import Any
 
 BASE = Path(__file__).resolve().parents[1]
 METHOD_DIR = BASE / "content" / "methods"
+SOURCE_DIR = METHOD_DIR / "source"
 PACK_PATH = METHOD_DIR / "all_methods.json.gz"
+MANIFEST_PATH = METHOD_DIR / "source_manifest.json"
 MODULE_ORDER = {"资料分析": 0, "判断推理": 1, "言语理解": 2, "数量关系": 3, "常识判断": 4}
+CORE_FIELDS = ("definition", "principle", "signals", "steps", "example", "boundary")
 
 
 def _method_sort_key(method_id: str) -> tuple[str, int]:
@@ -18,17 +21,68 @@ def _method_sort_key(method_id: str) -> tuple[str, int]:
     return (m.group(1), int(m.group(2))) if m else (method_id, 999)
 
 
-@lru_cache(maxsize=1)
-def load_catalog() -> list[dict[str, Any]]:
+def _read_json(path: Path, default: Any) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return default
+
+
+def _normalize(item: dict[str, Any]) -> dict[str, Any]:
+    row = dict(item)
+    comparison = str(row.get("comparison") or "")
+    marker = "考场调用指令"
+    if not row.get("exam_command") and marker in comparison:
+        before, _, after = comparison.partition(marker)
+        row["comparison"] = before.strip()
+        row["exam_command"] = after.strip(" ：:\n")
+    if not row.get("source_note"):
+        row["source_note"] = str(row.get("evidence") or row.get("source_method_label") or "来源见V2正文")
+    return row
+
+
+def _load_source_catalog() -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    if not SOURCE_DIR.exists():
+        return rows
+    for path in sorted(SOURCE_DIR.glob("*.json")):
+        payload = _read_json(path, {})
+        if not isinstance(payload, dict):
+            continue
+        for item in payload.get("items", []):
+            if isinstance(item, dict):
+                rows.append(_normalize(item))
+    return rows
+
+
+def _load_legacy_pack() -> list[dict[str, Any]]:
     if not PACK_PATH.exists():
         return []
     try:
         payload = json.loads(gzip.decompress(PACK_PATH.read_bytes()).decode("utf-8"))
     except (OSError, gzip.BadGzipFile, UnicodeDecodeError, json.JSONDecodeError):
         return []
-    rows = [dict(item) for item in payload.get("methods", []) if isinstance(item, dict)]
-    rows.sort(key=lambda x: (MODULE_ORDER.get(str(x.get("module")), 99), _method_sort_key(str(x.get("id") or ""))))
-    return rows
+    return [_normalize(item) for item in payload.get("methods", []) if isinstance(item, dict)]
+
+
+@lru_cache(maxsize=1)
+def load_catalog() -> list[dict[str, Any]]:
+    rows = _load_source_catalog() or _load_legacy_pack()
+    seen: set[str] = set()
+    clean: list[dict[str, Any]] = []
+    for row in rows:
+        method_id = str(row.get("id") or "").upper()
+        if not method_id or method_id in seen:
+            continue
+        if not row.get("title") or not row.get("module"):
+            continue
+        if any(not row.get(field) for field in CORE_FIELDS):
+            continue
+        row["id"] = method_id
+        seen.add(method_id)
+        clean.append(row)
+    clean.sort(key=lambda x: (MODULE_ORDER.get(str(x.get("module")), 99), _method_sort_key(str(x.get("id") or ""))))
+    return clean
 
 
 def summary() -> dict[str, Any]:
@@ -37,12 +91,14 @@ def summary() -> dict[str, Any]:
     for row in rows:
         module = str(row.get("module") or "其他")
         counts[module] = counts.get(module, 0) + 1
+    manifest = _read_json(MANIFEST_PATH, {})
     return {
         "total": len(rows),
         "counts": counts,
-        "source": "行测全题型方法与技巧大全_GitHub技能融合深化版V2",
-        "version": "2026-09-v2",
-        "quality_rule": "每个方法必须同时包含识别信号、底层原理、标准操作、完整例题和失效边界。",
+        "source": manifest.get("source") or "行测全题型方法与技巧大全_GitHub技能融合深化版V2.docx",
+        "version": manifest.get("version") or "2026-09-v2-source-grounded",
+        "composition": manifest.get("composition") or {},
+        "quality_rule": "正式方法必须同时包含识别信号、底层原理、标准操作、完整例题和失效边界；总方法论与复盘协议不虚增进正式方法数。",
     }
 
 
