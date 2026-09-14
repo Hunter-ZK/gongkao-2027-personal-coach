@@ -1,0 +1,19 @@
+{
+  "source": "行测全题型方法与技巧大全_GitHub技能融合深化版V2.docx",
+  "version": "2026-09-v2-source-grounded",
+  "formal_method_units": 79,
+  "composition": {
+    "numbered_methods": 46,
+    "deepening_methods": 33,
+    "principles": 6,
+    "review_protocols": 4
+  },
+  "module_counts": {
+    "资料分析": 28,
+    "判断推理": 21,
+    "言语理解": 15,
+    "数量关系": 14,
+    "常识判断": 1
+  },
+  "rule": "平台正式方法数只统计正文中的编号方法与深化方法。总方法论和复盘协议作为元方法保留，不虚增进正式方法数量。"
+}
