@@ -14,6 +14,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: '1'
     defaults:
       run:
         working-directory: local_app
@@ -39,6 +41,12 @@ jobs:
       - name: Compile Python
         run: python -m compileall -q .
       - name: Check frontend syntax
-        run: node --check static/js/app.js
+        run: |
+          node --check static/js/app.js
+          node --check static/js/runtime.js
+          node --check static/js/pages/dashboard.js
+          node --check static/js/pages/learning.js
+          node --check static/js/pages/knowledge.js
+          node --check static/js/lib/charts.js
       - name: Content lint
         run: python tools/content_lint.py content/nodes --cross-check
