@@ -44,8 +44,19 @@ def test_source_grounding_metadata_is_preserved():
     }
 
 
+def test_method_to_node_mapping_is_authoritative_and_complete():
+    rows = load_catalog()
+    assert summary()['mapped'] == 79
+    assert all(row.get('node_slug') for row in rows)
+    assert get_method('D09')['node_slug'] == 'data-abrx-base'
+    assert get_method('J14')['node_slug'] == 'figure-solid-reconstruction'
+    assert get_method('V04')['node_slug'] == 'verbal-logical-fill'
+    assert get_method('Q06')['node_slug'] == 'quant-engineering-travel'
+
+
 def test_method_api_functions_use_same_catalog():
     from routers.method_catalog import method, method_summary, methods
     assert method_summary()['total'] == 79
+    assert method_summary()['mapped'] == 79
     assert len(methods(module='资料分析', q='')) == 28
     assert method('D09')['module'] == '资料分析'
