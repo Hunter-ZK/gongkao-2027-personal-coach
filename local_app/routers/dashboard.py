@@ -20,7 +20,7 @@ def module_rows(exam):
         trend=list(reversed([x['correct_q']/x['total_q'] if x['total_q'] else 0 for x in trs]))
         ms=query("SELECT n.state,COUNT(*) c FROM node_mastery n JOIN knowledge_node k ON k.slug=n.node_slug WHERE k.module_names LIKE ? GROUP BY n.state",(f'%{m["name"]}%',));summary={x['state']:x['c'] for x in ms}
         gap='样本不足，暂不估算' if n<15 else (f"已达目标 {m['target_accuracy']:.0%}" if acc>=m['target_accuracy'] else f"需≥{m['target_accuracy']:.0%}，当前{acc:.1%}")
-        out.append({'name':m['name'],'accuracy':acc,'sample_n':n,'sample_sufficient':n>=15,'avg_seconds':q['avg_s'],'avg_seconds_estimated':False,'target_seconds':round(m['target_minutes']*60/max(1,m['question_count'])),'trend':trend,'mastery_summary':summary,'meets_full_paper_standard':bool(n>=15 and acc is not None and acc>=m['target_accuracy']),'gap_text':gap,'risk':None,'question_count':m['question_count'],'count_confidence':m['count_confidence'],'score_confidence':m.get('score_confidence','estimated')})
+        out.append({'name':m['name'],'accuracy':acc,'sample_n':n,'sample_sufficient':n>=15,'avg_seconds':q['avg_s'],'avg_seconds_estimated':False,'target_seconds':round(m['target_minutes']*60/max(1,m['question_count'])),'target_accuracy':m['target_accuracy'],'trend':trend,'mastery_summary':summary,'meets_full_paper_standard':bool(n>=15 and acc is not None and acc>=m['target_accuracy']),'gap_text':gap,'risk':None,'question_count':m['question_count'],'count_confidence':m['count_confidence'],'score_confidence':m.get('score_confidence','estimated')})
     return out
 @r.get('/dashboard/issues')
 def issues():return top_issues()
