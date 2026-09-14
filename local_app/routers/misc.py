@@ -55,7 +55,7 @@ def export_data():
     out=BASE/'data'/'exports';out.mkdir(parents=True,exist_ok=True);stamp=now_iso().replace(':','-');z=out/f'backup-{stamp}.zip'
     with zipfile.ZipFile(z,'w',zipfile.ZIP_DEFLATED) as zipf:
         if DB_PATH.exists():zipf.write(DB_PATH,'study.db')
-        for table in ['exam','paper_module','knowledge_node','node_mastery','training','question','mistake','review_attempt','study_session','task','method','shenlun_writing']:
+        for table in ['exam','paper_module','knowledge_node','node_mastery','training','question_bank','question_attempt','question','mistake','review_attempt','study_session','task','method','shenlun_writing']:
             rows=query(f'SELECT * FROM {table}');zipf.writestr(f'json/{table}.json',json.dumps(rows,ensure_ascii=False,indent=2))
         snap={'generated_at':now_iso(),'source':'local_app','note':'用于GitHub版本化备份；SQLite仍是本地运行数据库'};zipf.writestr('snapshot.json',json.dumps(snap,ensure_ascii=False,indent=2))
     return {'export_id':z.name,'filename':z.name}
