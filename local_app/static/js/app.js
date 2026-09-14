@@ -12,6 +12,7 @@ import { renderSettings } from './pages/settings.js';
 import { renderCoachPage } from './pages/coach.js';
 import { initGlobalCoach } from './global_coach.js';
 import { initFocusWidget, renderFocusHistoryPage } from './focus_widget.js';
+import { initSyncWidget } from './sync_widget.js';
 import { initZenMode, toggleZenMode, zenModeEnabled } from './privacy.js';
 
 const sidebar = document.querySelector('.sidebar');
@@ -171,4 +172,5 @@ if (zenButton) {
   };
 }
 initGlobalCoach();
+initSyncWidget();
 boot();
