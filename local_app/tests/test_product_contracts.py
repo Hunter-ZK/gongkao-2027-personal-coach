@@ -86,7 +86,7 @@ def test_knowledge_page_is_progressive_card_learning_not_default_longform():
     assert 'knowledge-method-card' in css
 
 
-def test_two_device_git_checkpoint_sync_is_global_and_secret_safe():
+def test_two_device_git_checkpoint_sync_is_global_private_and_secret_safe():
     template = read('templates/index.html')
     app = read('static/js/app.js')
     settings = read('static/js/pages/settings.js')
@@ -102,9 +102,13 @@ def test_two_device_git_checkpoint_sync_is_global_and_secret_safe():
     assert '/api/sync/pull' in sync_js
     assert '@r.post("/push")' in sync_router
     assert '@r.post("/pull")' in sync_router
+    assert 'Hunter-ZK/Civil_gemini2.git' in sync_service
+    assert 'gongkao-personal-data' in sync_service
+    assert 'private GitHub backing branch' in sync_service
     assert 'API Key' in sync_service or 'API keys' in sync_service
     assert 'data/secrets.json' in gitignore
     assert 'data/sync-state.json' in gitignore
+    assert 'data/sync-repo/' in gitignore
     assert 'study-before-sync-' in sync_service
 
 
@@ -120,7 +124,9 @@ def test_civil_gemini2_visual_baseline_and_views_are_loaded():
     assert "@import url('./civil_gemini_exact.css');" in app_css
     assert "@import url('./civil_gemini_views.css');" in app_css
     assert "@import url('./civil_gemini_methods.css');" in app_css
-    assert app_css.strip().endswith("@import url('./civil_gemini_training.css');")
+    assert "@import url('./civil_gemini_training.css');" in app_css
+    assert "@import url('./civil_gemini_mistakes.css');" in app_css
+    assert "@import url('./civil_gemini_review.css');" in app_css
     assert '--sidebar-w:256px' in visual
     assert 'global-coach-drawer' in visual
     assert 'focus-popover' in visual
