@@ -44,5 +44,7 @@ jobs:
         run: python tools/check_frontend.py
       - name: Frontend boot smoke
         run: node tests/frontend_boot_smoke.mjs
+      - name: Visual system lint
+        run: python tools/css_lint.py static/css templates static/js
       - name: Content lint
         run: python tools/content_lint.py content/nodes --cross-check
