@@ -1,6 +1,6 @@
 import { page, loadTimer, err, renderTimerPage, api, timerState, toggleTimer } from './runtime.js';
 import { renderDashboard, renderToday } from './pages/dashboard.js';
-import { renderImport } from './pages/learning.js';
+import { renderImport } from './pages/import.js';
 import { renderTrainings, renderQuestionBank } from './pages/training.js';
 import { renderMistakes, renderReview, setReviewAnswer } from './pages/mistakes.js';
 import { renderKnowledge } from './pages/knowledge.js';
