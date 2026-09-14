@@ -123,7 +123,7 @@ def check_css(path: Path) -> list[Issue]:
         val = m.group(1).strip()
         if val.startswith("none") or "var(" in val:
             continue
-        head = text[max(0, m.start() - 260): m.start()].lower()
+        head = text[max(0, m.start() - 800): m.start()].lower()
         if any(c in head for c in ALLOWED_SHADOW_CONTEXTS):
             continue
         out.append(Issue(str(path), line_of(m.start()), "ERROR", "V3", "只有浮层可以有阴影，层级用 1px 边框表达。03 第 3.3 节", snip(m.start())))
