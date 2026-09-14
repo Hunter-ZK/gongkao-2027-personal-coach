@@ -12,7 +12,7 @@ from pathlib import Path
 
 # Civil_gemini2 deliberately uses rounded cards, tiny metadata labels, subtle shadows,
 # gradients in the dashboard hero, and a 256px sidebar. These values supersede the
-# older flat 6px/no-shadow visual baseline.
+# older flat 6px/no-shadow visual baseline. Fully-pill controls may use 999px.
 MAX_RADIUS = 28
 MIN_FONT_SIZE = 8.0
 MAX_SIDEBAR_W = 260
@@ -89,7 +89,9 @@ def check_css(path: Path) -> list[Issue]:
 
     for m in RE_RADIUS.finditer(text):
         val = m.group(1)
-        if "%" in val or "var(" in val or "9999" in val:
+        # 999px/9999px are explicit pill radii, not card geometry. Variables are
+        # checked separately below, and percentage radii are naturally self-bounded.
+        if "%" in val or "var(" in val or "999px" in val or "9999" in val:
             continue
         for px in RE_PX.findall(val):
             if float(px) > MAX_RADIUS:
