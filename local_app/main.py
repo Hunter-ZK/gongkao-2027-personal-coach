@@ -7,16 +7,16 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from db import migrate, query, query_one
-from routers import dashboard,timer,training,mistakes,knowledge,plan,misc,coach
+from routers import dashboard,timer,training,mistakes,knowledge,method_catalog,plan,misc,coach
 BASE=Path(__file__).resolve().parent
 migrate()
-app=FastAPI(title='2027 公考个人备考工作台',version='1.1.0')
+app=FastAPI(title='2027 公考个人备考工作台',version='1.2.0')
 app.mount('/static',StaticFiles(directory=BASE/'static'),name='static')
 app.mount('/data-images',StaticFiles(directory=BASE/'data'/'images'),name='data-images')
 templates=Jinja2Templates(directory=BASE/'templates')
-for router in [dashboard.r,timer.r,training.r,mistakes.r,knowledge.r,plan.r,misc.r,coach.r]:app.include_router(router)
+for router in [dashboard.r,timer.r,training.r,mistakes.r,knowledge.r,method_catalog.r,plan.r,misc.r,coach.r]:app.include_router(router)
 @app.get('/health')
-def health():return {'ok':True,'service':'gongkao-workbench','version':'1.1.0'}
+def health():return {'ok':True,'service':'gongkao-workbench','version':'1.2.0'}
 @app.exception_handler(Exception)
 async def err(req:Request,exc:Exception):
     from fastapi import HTTPException

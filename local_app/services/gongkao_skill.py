@@ -6,6 +6,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from services.method_library import load_catalog
+
 BASE = Path(__file__).resolve().parents[1]
 SKILL_DIR = BASE / "skills" / "gongkao-method-coach"
 METHOD_DIR = BASE / "content" / "methods"
@@ -19,7 +21,8 @@ KEYWORD_GROUPS = {
     "资料分析": ["资料", "基期", "现期", "增长率", "增长量", "比重", "百分点", "平均数", "倍数", "截位", "直除", "415", "份数", "ABRX", "混合增长"],
     "判断推理": ["判断", "逻辑", "加强", "削弱", "前提", "假设", "翻译推理", "分析推理", "类比", "图形", "图推", "定义判断"],
     "言语理解": ["言语", "主旨", "中心", "意图", "逻辑填空", "成语", "词语", "排序", "衔接", "细节"],
-    "数量关系": ["数量", "排列", "组合", "概率", "工程", "行程", "利润", "容斥", "最值", "几何", "年龄", "方程"],
+    "数量关系": ["数量", "排列", "组合", "概率", "工程", "行程", "利润", "容斥", "最值", "几何", "年龄", "方程", "牛吃草", "数字推理"],
+    "常识判断": ["常识", "政治", "法律", "科技", "措辞", "绝对词"],
     "复盘策略": ["复盘", "错题", "模考", "超时", "蒙对", "纠结", "时间", "弃题", "止损", "提速", "训练"],
 }
 
@@ -41,23 +44,41 @@ def load_sources() -> list[dict[str, Any]]:
     return list(data.get("sources") or [])
 
 
+def _method_text(item: dict[str, Any]) -> str:
+    body_parts: list[str] = []
+    for field in (
+        "module", "definition", "signals", "principle", "steps", "example", "boundary",
+        "comparison", "variants", "exam_command", "evidence", "source_note",
+    ):
+        value = item.get(field)
+        if isinstance(value, list):
+            value = "\n".join(str(x) for x in value)
+        if value:
+            body_parts.append(f"{field}: {value}")
+    return "\n".join(body_parts)
+
+
 def load_method_documents() -> list[dict[str, str]]:
     docs: list[dict[str, str]] = []
+
+    # 总方法论/复盘协议仍保存在可读 JSON 索引中。
     for path in sorted(METHOD_DIR.glob("*.json")):
         data = _read_json(path, {})
-        for key in ("principles", "review_protocols", "methods", "items"):
+        for key in ("principles", "review_protocols", "items"):
             for item in data.get(key, []) if isinstance(data, dict) else []:
                 if not isinstance(item, dict):
                     continue
                 title = str(item.get("title") or item.get("name") or item.get("id") or path.stem)
-                body_parts = []
-                for field in ("body", "definition", "signals", "principle", "steps", "example", "boundary", "exam_command", "source_note"):
-                    value = item.get(field)
-                    if isinstance(value, list):
-                        value = "\n".join(str(x) for x in value)
-                    if value:
-                        body_parts.append(f"{field}: {value}")
-                docs.append({"kind": "method", "title": title, "source": f"content/methods/{path.name}", "text": "\n".join(body_parts)})
+                docs.append({"kind": "method", "title": title, "source": f"content/methods/{path.name}", "text": _method_text(item) or str(item.get("body") or "")})
+
+    # 80 个正式方法由结构化方法包统一加载，避免重复维护两套正文。
+    for item in load_catalog():
+        docs.append({
+            "kind": "method",
+            "title": str(item.get("title") or item.get("id")),
+            "source": "content/methods/all_methods.json.gz",
+            "text": _method_text(item),
+        })
     return docs
 
 
@@ -86,7 +107,7 @@ def _query_terms(query: str) -> list[str]:
             terms.append(group)
             terms.extend(word for word in words if word.lower() in compact.lower())
     terms.extend(x for x in re.split(r"[\s，。！？、；：,.!?;:()（）]+", query) if len(x) >= 2)
-    seen = set()
+    seen: set[str] = set()
     return [x for x in terms if not (x in seen or seen.add(x))]
 
 
