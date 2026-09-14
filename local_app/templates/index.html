@@ -37,6 +37,7 @@
       <a href="/import" data-path="/import"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#import"></use></svg><span>导入</span></a>
       <div class="nav-label">体系</div>
       <a href="/knowledge" data-path="/knowledge"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#book"></use></svg><span>行测体系</span><em id="knowledge-progress"></em></a>
+      <a href="/coach" data-path="/coach"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#chat"></use></svg><span>AI 方法教练</span></a>
       <a href="/shenlun" data-path="/shenlun"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#pen"></use></svg><span>申论</span></a>
       <a href="/plan" data-path="/plan"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#calendar"></use></svg><span>备考规划</span></a>
       <a href="/progress" data-path="/progress"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#trend"></use></svg><span>能力趋势</span></a>
@@ -47,20 +48,29 @@
         <div class="exam-card"><div class="exam-card-head"><span>{{ '国考副省级' if e.code=='national' else '广东省考' }}</span>{% if not e.is_official %}<em title="{{ e.date_source }}">预估</em>{% endif %}</div><strong>{{ e.days_left if e.days_left is not none else '—' }}<small>天</small></strong><span class="exam-date">{{ e.exam_date }}</span></div>
         {% endfor %}
       </div>
-      <a class="sidebar-utility" href="/methods"><svg class="utility-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#bookmark"></use></svg><span>方法与结论</span></a>
+      <a class="sidebar-utility" href="/methods"><svg class="utility-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#bookmark"></use></svg><span>方法库与结论</span></a>
       <a class="sidebar-utility" href="/settings"><svg class="utility-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#sliders"></use></svg><span>设置</span></a>
     </div>
   </aside>
   <div class="app-shell">
     <header class="topbar">
-      <div class="top-left"><button class="mobile-menu icon-button" aria-label="打开菜单" type="button"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#menu"></use></svg></button><div class="breadcrumb"><span>备考工作台</span><b>/</b><strong>{{ page_title }}</strong></div></div>
-      <div class="top-actions"><div id="mini-timer" class="mini-timer"><button class="timer-quick" type="button">开始计时</button></div><div class="date-chip"><span class="today-label"></span></div><button class="icon-button" type="button" aria-label="查看快捷键" onclick="document.querySelector('#help-dialog').showModal()"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#help"></use></svg></button></div>
+      <div class="top-left">
+        <button class="mobile-menu icon-button" aria-label="打开菜单" type="button"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#menu"></use></svg></button>
+        <div class="breadcrumb"><span>备考工作台</span><b>/</b><strong>{{ page_title }}</strong></div>
+      </div>
+      <div class="top-actions">
+        <div id="mini-timer" class="mini-timer"><button class="timer-quick" type="button">开始计时</button></div>
+        <a class="secondary top-coach-link" href="/coach"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#chat"></use></svg><span>AI 教练</span></a>
+        <button id="zen-toggle" class="secondary top-mode-button" type="button" data-zen-ignore="1" aria-pressed="false"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#focus"></use></svg><span>禅模式</span></button>
+        <div class="date-chip"><span class="today-label"></span></div>
+        <button class="icon-button" type="button" aria-label="查看快捷键" onclick="document.querySelector('#help-dialog').showModal()"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#help"></use></svg></button>
+      </div>
     </header>
     <main id="app-main" class="main"><div class="loading-shell"><strong>加载中</strong></div></main>
   </div>
   <dialog id="help-dialog" class="command-dialog">
     <div class="dialog-head"><h2>快捷键</h2><button class="icon-button" type="button" aria-label="关闭" onclick="this.closest('dialog').close()"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#close"></use></svg></button></div>
-    <div class="shortcut-grid"><div><kbd>Ctrl / Cmd</kbd><kbd>K</kbd><span>全局搜索</span></div><div><kbd>T</kbd><span>学习计时</span></div><div><kbd>G</kbd><kbd>D</kbd><span>总览</span></div><div><kbd>G</kbd><kbd>T</kbd><span>今日任务</span></div><div><kbd>G</kbd><kbd>K</kbd><span>行测体系</span></div><div><kbd>G</kbd><kbd>R</kbd><span>错题复训</span></div><div><kbd>A–D</kbd><span>选择答案</span></div><div><kbd>Esc</kbd><span>关闭浮层</span></div></div>
+    <div class="shortcut-grid"><div><kbd>Ctrl / Cmd</kbd><kbd>K</kbd><span>全局搜索</span></div><div><kbd>Alt</kbd><kbd>Z</kbd><span>禅模式</span></div><div><kbd>T</kbd><span>学习计时</span></div><div><kbd>G</kbd><kbd>D</kbd><span>总览</span></div><div><kbd>G</kbd><kbd>T</kbd><span>今日任务</span></div><div><kbd>G</kbd><kbd>K</kbd><span>行测体系</span></div><div><kbd>G</kbd><kbd>R</kbd><span>错题复训</span></div><div><kbd>A–D</kbd><span>选择答案</span></div><div><kbd>Esc</kbd><span>关闭浮层</span></div></div>
   </dialog>
   <script type="module" src="/static/js/app.js"></script>
 </body>
