@@ -40,13 +40,9 @@ jobs:
         run: python -m pytest -q -rs
       - name: Compile Python
         run: python -m compileall -q .
-      - name: Check frontend syntax
-        run: |
-          node --check static/js/app.js
-          node --check static/js/runtime.js
-          node --check static/js/pages/dashboard.js
-          node --check static/js/pages/learning.js
-          node --check static/js/pages/knowledge.js
-          node --check static/js/lib/charts.js
+      - name: Strict frontend syntax check
+        run: python tools/check_frontend.py
+      - name: Frontend boot smoke
+        run: node tests/frontend_boot_smoke.mjs
       - name: Content lint
         run: python tools/content_lint.py content/nodes --cross-check
