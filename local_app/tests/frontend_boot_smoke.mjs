@@ -60,4 +60,10 @@ await import('../static/js/app.js');
 await new Promise((resolve) => setTimeout(resolve, 100));
 if (!main.children.length) throw new Error('app boot did not replace loading shell');
 if (main.children[0]?.className !== 'hero') throw new Error(`unexpected first dashboard node: ${main.children[0]?.className}`);
+
+const { sanitizeZenText } = await import('../static/js/privacy.js');
+const sample = sanitizeZenText('2027 公考私教 · 广东省考 · 国考 · 公务员考试 · 行测 · 申论 · 粉笔真题 · 错题复训');
+for (const sensitive of ['公考', '省考', '国考', '公务员', '行测', '申论', '粉笔', '真题', '错题', '复训']) {
+  if (sample.includes(sensitive)) throw new Error(`zen redaction leaked: ${sensitive}`);
+}
 console.log('frontend boot smoke ok');
