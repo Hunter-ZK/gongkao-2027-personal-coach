@@ -30,3 +30,23 @@ def test_system_prompt_retrieves_local_material():
     assert "本轮回答纪律" in prompt
     assert refs
     assert any("ABRX" in x["text"] or "基期" in x["text"] or "资料" in x["title"] for x in refs)
+
+
+def test_coach_retrieval_uses_source_grounded_79_method_catalog():
+    refs = skill.retrieve_context("415份数法如何求基期量", limit=5)
+    assert any("415份数法" in x["title"] for x in refs)
+    method_refs = [x for x in refs if x["kind"] == "method" and "415份数法" in x["title"]]
+    assert method_refs
+    assert all(x["source"] == "content/methods/source/*.json" for x in method_refs)
+    assert "A:X:B" in method_refs[0]["text"] or "份数" in method_refs[0]["text"]
+
+
+def test_coach_can_retrieve_cross_module_methods():
+    cases = {
+        "六面体怎么排除": "六面体",
+        "工程问题最小公倍数怎么赋值": "工程问题",
+        "逻辑填空怎么抓对应": "逻辑填空",
+    }
+    for query, expected in cases.items():
+        refs = skill.retrieve_context(query, limit=6)
+        assert any(expected in x["title"] for x in refs), (query, [x["title"] for x in refs])
