@@ -6,6 +6,10 @@ data/study.db
 data/study.db-shm
 data/study.db-wal
 data/secrets.json
+data/sync-state.json
+data/sync-repo/
+data/backups/
+data/uploads/
 data/images/*
 !data/images/.gitkeep
 exports/*

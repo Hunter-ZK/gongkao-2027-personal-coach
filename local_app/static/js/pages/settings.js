@@ -9,8 +9,15 @@ function row(label, value, hint = '') {
   );
 }
 
+function syncBadge(sync) {
+  if (!sync?.available) return h('span', { class: 'tag pending' }, '当前不可用');
+  if (sync.behind > 0 || (sync.remote_revision && sync.remote_revision !== sync.last_sync_revision)) return h('span', { class: 'tag pending' }, '云端有更新');
+  if (sync.local_dirty) return h('span', { class: 'tag pending' }, '本机有新进度');
+  return h('span', { class: 'tag correct' }, sync.last_sync_at ? '已同步' : '可使用');
+}
+
 export async function renderSettings() {
-  const [settings, coach] = await Promise.all([
+  const [settings, coach, sync] = await Promise.all([
     api('/api/settings'),
     api('/api/coach/config').catch(() => ({
       configured: false,
@@ -18,8 +25,9 @@ export async function renderSettings() {
       thinking: false,
       models: [],
     })),
+    api('/api/sync/status').catch((error) => ({ available: false, error: error.message })),
   ]);
-  clear(main).append(title('设置', '学习阈值、禅模式、DeepSeek 方法教练和本地数据维护统一放在这里。'));
+  clear(main).append(title('设置', '学习阈值、双设备同步、禅模式、AI 方法教练和本地数据维护统一放在这里。'));
 
   const deep = h('input', { type: 'number', value: settings.deep_threshold_min || 30, min: '1' });
   const focus = h('input', { type: 'number', value: settings.focus_threshold_min || 15, min: '1' });
@@ -37,6 +45,52 @@ export async function renderSettings() {
       });
       alert('学习设置已保存');
     } }, '保存学习设置')),
+  ));
+
+  const syncStatusText = sync.available
+    ? `分支 ${sync.branch || '—'} · 最近同步 ${sync.last_sync_at || '尚未同步'}${sync.remote_device ? ` · 云端设备 ${sync.remote_device}` : ''}`
+    : (sync.error || '暂时无法访问私有同步仓库');
+  main.append(panel('公司 / 家里双设备同步',
+    h('div', { class: `integration-status ${sync.available ? 'is-ready' : ''}` },
+      h('strong', {}, 'Git Checkpoint Sync'),
+      syncBadge(sync),
+      h('span', {}, '不要求实时在线：公司电脑提交一次，回家电脑拉取一次即可接着学习。'),
+    ),
+    h('div', { class: 'settings-list' },
+      row('当前状态', h('span', {}, syncStatusText), '系统同步学习数据库与题目图片；拉取前会自动备份本机数据库。'),
+      row('私有同步仓库', h('code', {}, sync.origin || '—'), '默认使用 Civil_gemini2 的 gongkao-personal-data 私有分支作为数据交换区；公开公考代码仓库不会保存你的学习数据库、题目图片或 API Key。'),
+      row('首次使用', h('span', {}, sync.initialized ? '本机同步缓存已建立' : '点击提交/拉取时自动初始化'), '若本机 Git 尚未登录 GitHub，只需完成一次 GitHub 身份认证。'),
+      row('冲突保护', h('span', { class: 'tag correct' }, '已启用'), '本机和云端同时存在新数据时不会静默覆盖，会先阻止操作并提示。'),
+    ),
+    h('div', { class: 'actions' },
+      h('button', { class: 'primary', disabled: !sync.available, onclick: async () => {
+        try {
+          const result = await jpost('/api/sync/push', {});
+          alert(`提交完成：${result.revision || '最新版本'}。回家后点击“拉取云端进度”即可。`);
+          location.reload();
+        } catch (error) {
+          alert(error.message);
+        }
+      } }, '提交本机进度'),
+      h('button', { class: 'secondary', disabled: !sync.available, onclick: async () => {
+        try {
+          const result = await jpost('/api/sync/pull', { force: false });
+          alert(`拉取完成：${result.revision || '最新版本'}。现在可直接继续学习。`);
+          location.reload();
+        } catch (error) {
+          if (/未提交学习数据|本机有未提交/.test(error.message) && confirm(`${error.message}\n\n是否强制使用云端版本？系统会先备份本机数据库。`)) {
+            try {
+              await jpost('/api/sync/pull', { force: true });
+              location.reload();
+            } catch (forcedError) {
+              alert(forcedError.message);
+            }
+          } else {
+            alert(error.message);
+          }
+        }
+      } }, '拉取云端进度'),
+    ),
   ));
 
   const zen = h('input', { type: 'checkbox', checked: zenModeEnabled() });
@@ -82,7 +136,7 @@ export async function renderSettings() {
       row('API Key', key, coach.configured ? '本机已有密钥；页面不会回显。' : '仅保存在本机，不提交到 GitHub。'),
       row('默认模型', model, '即时问答可用 Flash；复杂错题与复盘可切深度模型。'),
       row('深度思考', h('label', { class: 'switch-field' }, thinking, h('span', {}, thinking.checked ? '开启' : '关闭')), '开启后响应更慢，但可用于复杂推理。'),
-      row('错题自动解析', h('span', { class: 'tag correct' }, coach.configured ? '自动启用' : '等待配置'), 'PDF/训练结果确认入库后，错题自动生成标准解、最快路径、适用边界、命题陷阱和建议错因；正式错因仍由你确认。'),
+      row('错题自动解析', h('span', { class: 'tag correct' }, coach.configured ? '自动启用' : '等待配置'), 'PDF 入库后由后端自动提交错题，优先调用你提供的 Skill / V2 方法库，生成标准解、快解边界、命题陷阱、建议错因与知识节点关联。'),
     ),
     h('div', { class: 'actions' },
       h('button', { class: 'primary', onclick: async () => {
@@ -100,7 +154,7 @@ export async function renderSettings() {
   ));
 
   main.append(panel('本地数据',
-    h('p', { class: 'subtle' }, settings.data_policy || '数据保存在本机 SQLite。'),
+    h('p', { class: 'subtle' }, settings.data_policy || '运行时数据保存在本机 SQLite；跨设备通过私有 Git Checkpoint 同步。'),
     h('div', { class: 'actions' }, h('button', { class: 'secondary', onclick: async () => {
       const exportResult = await jpost('/api/export');
       location.href = `/api/export/${exportResult.export_id}/download`;
