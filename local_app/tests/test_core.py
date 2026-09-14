@@ -18,7 +18,7 @@ def fresh_app(tmp_path, monkeypatch):
 def test_health_and_nav(tmp_path, monkeypatch):
     client, db=fresh_app(tmp_path,monkeypatch)
     assert client.get('/health').status_code==200
-    for path in ['/','/today','/timer','/trainings','/mistakes','/review','/import','/knowledge','/shenlun','/plan','/progress','/methods','/settings']:
+    for path in ['/','/today','/timer','/trainings','/questions','/mistakes','/review','/import','/knowledge','/shenlun','/plan','/progress','/methods','/settings']:
         assert client.get(path).status_code==200
 
 def test_timer_pause_state(tmp_path, monkeypatch):
@@ -107,3 +107,21 @@ def test_mastery_requires_closed_book_and_exact_speed(tmp_path, monkeypatch):
     assert m['state']=='稳定'
     hist=db.query("SELECT * FROM mastery_history WHERE node_slug=?",(slug,))
     assert len(hist)>=2
+
+
+def test_question_bank_keeps_canonical_question_and_attempt_history(tmp_path, monkeypatch):
+    client, db=fresh_app(tmp_path,monkeypatch)
+    from services.question_bank import upsert_question_bank, add_attempt
+    with db.transaction() as c:
+        tid=c.execute("INSERT INTO training(trained_on,source,exam_type,total_q,correct_q,data_confidence,created_at) VALUES('2026-09-14','fenbi_random','na',1,0,'verified',datetime('now'))").lastrowid
+        qid=c.execute("INSERT INTO question(training_id,seq,module,subtype,stem_md,options_json,user_answer,correct_answer,is_correct,verified,created_at) VALUES(?,?,?,?,?,?,?,?,0,1,datetime('now'))",(tid,1,'判断推理','逻辑判断·加强削弱','测试题','{\"A\":\"甲\",\"B\":\"乙\",\"C\":\"丙\",\"D\":\"丁\"}','B','A')).lastrowid
+        q=dict(c.execute('SELECT * FROM question WHERE id=?',(qid,)).fetchone())
+        bank_id=upsert_question_bank(c,q,None,'fixture.pdf')
+        c.execute('UPDATE question SET bank_id=? WHERE id=?',(bank_id,qid))
+        add_attempt(c,bank_id=bank_id,question=q,training_id=tid,attempted_on='2026-09-14',source='fenbi_random')
+        assert upsert_question_bank(c,q,None,'fixture.pdf')==bank_id
+    rows=client.get('/api/question-bank').json()
+    assert len(rows)==1
+    assert rows[0]['attempt_count']==1 and rows[0]['wrong_count']==1
+    detail=client.get(f'/api/question-bank/{rows[0]["id"]}').json()
+    assert len(detail['attempts'])==1 and detail['attempts'][0]['user_answer']=='B'
