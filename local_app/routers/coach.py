@@ -6,11 +6,24 @@ import urllib.request
 from collections.abc import Iterator
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from services.gongkao_skill import ALLOWED_MODELS, build_system_prompt, load_secret_config, load_sources, public_config, save_secret_config
+from services.gongkao_skill import (
+    ALLOWED_MODELS,
+    build_system_prompt,
+    load_secret_config,
+    load_sources,
+    public_config,
+    save_secret_config,
+)
+from services.mistake_ai import (
+    analyze_many_mistakes,
+    analyze_mistake,
+    configured as mistake_ai_configured,
+    mistake_ids_for_training,
+)
 
 r = APIRouter(prefix="/api/coach", tags=["coach"])
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
@@ -42,9 +55,45 @@ def get_config():
 @r.put("/config")
 def put_config(body: ConfigIn):
     try:
-        return save_secret_config(api_key=body.api_key, model=body.model, thinking=body.thinking, clear_key=body.clear_key)
+        return save_secret_config(
+            api_key=body.api_key,
+            model=body.model,
+            thinking=body.thinking,
+            clear_key=body.clear_key,
+        )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+
+@r.post("/analyze-training/{training_id}")
+def analyze_training(training_id: int, background_tasks: BackgroundTasks):
+    mistake_ids = mistake_ids_for_training(training_id)
+    if not mistake_ids:
+        return {"configured": mistake_ai_configured(), "scheduled": 0, "mistake_ids": []}
+    if not mistake_ai_configured():
+        return {
+            "configured": False,
+            "scheduled": 0,
+            "mistake_ids": mistake_ids,
+            "message": "错题已入库；DeepSeek 尚未配置，因此未自动解析。配置后可在错题页重新解析。",
+        }
+    background_tasks.add_task(analyze_many_mistakes, mistake_ids)
+    return {
+        "configured": True,
+        "scheduled": len(mistake_ids),
+        "mistake_ids": mistake_ids,
+        "message": f"已提交 {len(mistake_ids)} 道错题给 DeepSeek 后台解析。",
+    }
+
+
+@r.post("/analyze-mistake/{mistake_id}")
+def analyze_single_mistake(mistake_id: int):
+    if not mistake_ai_configured():
+        raise HTTPException(409, "尚未配置 DeepSeek API Key")
+    try:
+        return analyze_mistake(mistake_id, overwrite=True)
+    except RuntimeError as exc:
+        raise HTTPException(502, str(exc)) from exc
 
 
 def _sse(payload: dict) -> bytes:
@@ -64,19 +113,43 @@ def _deepseek_stream(body: ChatIn) -> Iterator[bytes]:
     thinking = cfg["thinking"] if body.thinking is None else body.thinking
     latest_query = next((m.content for m in reversed(body.messages) if m.role == "user"), "")
     system_prompt, refs = build_system_prompt(latest_query)
-    yield _sse({"type": "meta", "model": model, "thinking": bool(thinking), "sources": [{"title": x["title"], "source": x["source"], "kind": x["kind"]} for x in refs]})
+    yield _sse({
+        "type": "meta",
+        "model": model,
+        "thinking": bool(thinking),
+        "sources": [
+            {"title": item["title"], "source": item["source"], "kind": item["kind"]}
+            for item in refs
+        ],
+    })
 
     messages = [{"role": "system", "content": system_prompt}]
-    messages.extend({"role": m.role, "content": m.content} for m in body.messages[-16:])
-    payload = {"model": model, "messages": messages, "thinking": {"type": "enabled" if thinking else "disabled"}, "stream": True, "max_tokens": 2800}
+    messages.extend({"role": message.role, "content": message.content} for message in body.messages[-16:])
+    payload = {
+        "model": model,
+        "messages": messages,
+        "thinking": {"type": "enabled" if thinking else "disabled"},
+        "stream": True,
+        "max_tokens": 2800,
+    }
     if thinking:
         payload["reasoning_effort"] = "high"
 
-    req = urllib.request.Request(DEEPSEEK_URL, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Content-Type": "application/json", "Authorization": f"Bearer {cfg['api_key']}", "Accept": "text/event-stream", "User-Agent": "Liano-Civil/1.0"}, method="POST")
+    request = urllib.request.Request(
+        DEEPSEEK_URL,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {cfg['api_key']}",
+            "Accept": "text/event-stream",
+            "User-Agent": "Liano-Civil/1.0",
+        },
+        method="POST",
+    )
 
     try:
-        with urllib.request.urlopen(req, timeout=90) as resp:
-            for raw in resp:
+        with urllib.request.urlopen(request, timeout=90) as response:
+            for raw in response:
                 line = raw.decode("utf-8", errors="replace").strip()
                 if not line.startswith("data:"):
                     continue
@@ -113,6 +186,10 @@ def _deepseek_stream(body: ChatIn) -> Iterator[bytes]:
 
 @r.post("/chat")
 def chat(body: ChatIn):
-    if not any(m.role == "user" for m in body.messages):
+    if not any(message.role == "user" for message in body.messages):
         raise HTTPException(400, "至少需要一条用户消息")
-    return StreamingResponse(_deepseek_stream(body), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    return StreamingResponse(
+        _deepseek_stream(body),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
