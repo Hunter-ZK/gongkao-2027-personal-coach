@@ -10,13 +10,14 @@ BASE = Path(__file__).resolve().parents[1]
 METHOD_DIR = BASE / "content" / "methods"
 SOURCE_DIR = METHOD_DIR / "source"
 MANIFEST_PATH = METHOD_DIR / "source_manifest.json"
+MAPPING_PATH = BASE / "content" / "method_mapping.json"
 MODULE_ORDER = {"资料分析": 0, "判断推理": 1, "言语理解": 2, "数量关系": 3, "常识判断": 4}
 CORE_FIELDS = ("definition", "principle", "signals", "steps", "example", "boundary")
 
 
 def _method_sort_key(method_id: str) -> tuple[str, int]:
-    m = re.match(r"([A-Z]+)(\d+)$", method_id)
-    return (m.group(1), int(m.group(2))) if m else (method_id, 999)
+    match = re.match(r"([A-Z]+)(\d+)$", method_id)
+    return (match.group(1), int(match.group(2))) if match else (method_id, 999)
 
 
 def _read_json(path: Path, default: Any) -> Any:
@@ -24,6 +25,13 @@ def _read_json(path: Path, default: Any) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return default
+
+
+@lru_cache(maxsize=1)
+def load_mapping() -> dict[str, str]:
+    payload = _read_json(MAPPING_PATH, {})
+    mapping = payload.get("method_to_node", {}) if isinstance(payload, dict) else {}
+    return {str(key).upper(): str(value) for key, value in mapping.items() if key and value}
 
 
 def _normalize(item: dict[str, Any]) -> dict[str, Any]:
@@ -56,6 +64,7 @@ def _load_source_catalog() -> list[dict[str, Any]]:
 @lru_cache(maxsize=1)
 def load_catalog() -> list[dict[str, Any]]:
     rows = _load_source_catalog()
+    mapping = load_mapping()
     seen: set[str] = set()
     clean: list[dict[str, Any]] = []
     for row in rows:
@@ -67,9 +76,10 @@ def load_catalog() -> list[dict[str, Any]]:
         if any(not row.get(field) for field in CORE_FIELDS):
             continue
         row["id"] = method_id
+        row["node_slug"] = mapping.get(method_id)
         seen.add(method_id)
         clean.append(row)
-    clean.sort(key=lambda x: (MODULE_ORDER.get(str(x.get("module")), 99), _method_sort_key(str(x.get("id") or ""))))
+    clean.sort(key=lambda item: (MODULE_ORDER.get(str(item.get("module")), 99), _method_sort_key(str(item.get("id") or ""))))
     return clean
 
 
@@ -80,8 +90,10 @@ def summary() -> dict[str, Any]:
         module = str(row.get("module") or "其他")
         counts[module] = counts.get(module, 0) + 1
     manifest = _read_json(MANIFEST_PATH, {})
+    mapped = sum(1 for row in rows if row.get("node_slug"))
     return {
         "total": len(rows),
+        "mapped": mapped,
         "counts": counts,
         "source": manifest.get("source") or "行测全题型方法与技巧大全_GitHub技能融合深化版V2.docx",
         "version": manifest.get("version") or "2026-09-v2-source-grounded",
@@ -91,21 +103,21 @@ def summary() -> dict[str, Any]:
 
 
 def search_methods(module: str = "", q: str = "") -> list[dict[str, Any]]:
-    qn = re.sub(r"\s+", "", q).lower()
+    normalized_query = re.sub(r"\s+", "", q).lower()
     out: list[dict[str, Any]] = []
     for row in load_catalog():
         if module and row.get("module") != module:
             continue
-        if qn:
+        if normalized_query:
             values: list[str] = []
-            for key in ("id", "title", "module", "definition", "principle", "evidence", "source_note", "exam_command", "comparison", "variants"):
+            for key in ("id", "title", "module", "definition", "principle", "evidence", "source_note", "exam_command", "comparison", "variants", "node_slug"):
                 value = row.get(key)
                 if value:
                     values.append(str(value))
             for key in ("signals", "steps"):
-                values.extend(str(x) for x in (row.get(key) or []))
-            hay = re.sub(r"\s+", "", "\n".join(values)).lower()
-            if qn not in hay:
+                values.extend(str(item) for item in (row.get(key) or []))
+            haystack = re.sub(r"\s+", "", "\n".join(values)).lower()
+            if normalized_query not in haystack:
                 continue
         out.append(row)
     return out
