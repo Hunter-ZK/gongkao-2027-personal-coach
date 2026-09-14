@@ -1,0 +1,43 @@
+name: Build Civil Gemini Frontend
+
+on:
+  push:
+    branches:
+      - feature/civil-gemini2-exact-frontend
+    paths:
+      - 'local_app/frontend/**'
+      - '.github/workflows/build-civil-frontend.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: ${{ !contains(github.event.head_commit.message, '[skip frontend-build]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and type-check
+        working-directory: local_app/frontend
+        run: |
+          npm install
+          npm run lint
+      - name: Build React frontend
+        working-directory: local_app/frontend
+        run: npm run build
+      - name: Commit build artifacts
+        run: |
+          git config user.name "Gongkao Workbench CI"
+          git config user.email "gongkao-workbench@users.noreply.github.com"
+          git add local_app/frontend/package-lock.json local_app/frontend_dist
+          if git diff --cached --quiet; then
+            echo "Build artifacts already up to date"
+          else
+            git commit -m "Build Civil Gemini frontend [skip frontend-build]"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
