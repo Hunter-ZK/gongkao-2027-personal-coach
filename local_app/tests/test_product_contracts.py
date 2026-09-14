@@ -94,5 +94,10 @@ def test_civil_gemini2_visual_baseline_and_views_are_loaded():
     assert 'coach-layout' in views
     assert 'method-accordion-card' in methods_css
     assert 'method-accordion-card' in methods_js
-    assert 'training-batch-card' in training_css
-    assert 'training-batch-card' in training_js
+    assert 'cg-training-batch-card' in training_css
+    assert 'cg-training-batch-card' in training_js
+    assert 'cg-question-bank-toolbar' in training_css
+    assert 'cg-question-bank-row' in training_js
+    assert 'cg-question-modal-card' in training_css
+    assert 'cg-question-modal-card' in training_js
+    assert '历史正确率' in training_js
