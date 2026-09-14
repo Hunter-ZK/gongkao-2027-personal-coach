@@ -1,9 +1,10 @@
 import { page, loadTimer, err, renderTimerPage, api, timerState, toggleTimer } from './runtime.js';
 import { renderDashboard, renderToday } from './pages/dashboard.js';
-import { renderTrainings, renderImport } from './pages/learning.js';
-import { renderPlan, renderProgress, renderMethods, renderSettings } from './pages/knowledge.js';
-import { renderKnowledge as renderKnowledgeWorkspace } from './pages/knowledge-v2.js';
-import { renderMistakes, renderReview, setReviewAnswer } from './pages/mistakes-v2.js';
+import { renderImport } from './pages/learning.js';
+import { renderTrainings, renderQuestionBank } from './pages/training.js';
+import { renderMistakes, renderReview, setReviewAnswer } from './pages/mistakes.js';
+import { renderKnowledge } from './pages/knowledge.js';
+import { renderPlan, renderProgress, renderMethods, renderSettings } from './pages/support.js';
 import { renderCoachPage } from './pages/coach.js';
 import { initZenMode } from './privacy.js';
 
@@ -24,7 +25,7 @@ async function loadKnowledgeProgress() {
     const rows = await api('/api/knowledge/tree');
     const list = rows.filter((row) => row.subject === 'xingce');
     const built = list.filter((row) => row.build_status !== '未建设').length;
-    badge.textContent = list.length ? `${built}/${list.length}` : '';
+    badge.textContent = built ? `${built}/${list.length}` : '';
   } catch (_) {
     badge.textContent = '';
   }
@@ -45,15 +46,15 @@ async function boot() {
       case '/timer': return renderTimerPage();
       case '/trainings': return renderTrainings();
       case '/questions': {
-        history.replaceState(null, '', '/trainings?view=bank');
-        return renderTrainings('bank');
+        history.replaceState(null, '', '/trainings?tab=bank');
+        return renderQuestionBank();
       }
       case '/mistakes': return renderMistakes();
       case '/review': return renderReview();
       case '/import': return renderImport();
-      case '/knowledge': return renderKnowledgeWorkspace('xingce');
-      case '/shenlun': return renderKnowledgeWorkspace('shenlun');
-      case '/coach': return renderCoachPage();
+      case '/knowledge': return renderKnowledge('xingce');
+      case '/shenlun': return renderKnowledge('shenlun');
+      case '/coach': return localStorage.getItem('liano.aiCoachEnabled') === '1' ? renderCoachPage() : renderSettings();
       case '/plan': return renderPlan();
       case '/progress': return renderProgress();
       case '/methods': return renderMethods();
