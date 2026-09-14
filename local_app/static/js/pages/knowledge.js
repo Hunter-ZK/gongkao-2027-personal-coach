@@ -1,4 +1,5 @@
-import{api,jpost,jput,main,clear,h,pct,hours,tag,title,panel,tableWrap,metric,criterionCard}from'../runtime.js';
+import{jput}from'../lib/api.js';
+import{api,jpost,main,clear,h,pct,hours,tag,title,panel,tableWrap,metric,criterionCard}from'../runtime.js';
 
 export async function renderKnowledge(subject='xingce'){
   const rows=await api('/api/knowledge/tree'),list=rows.filter(x=>x.subject===subject);clear(main).append(title(subject==='xingce'?'行测方法体系':'申论能力体系',subject==='xingce'?'按“识别 → 主方法 → 快速路径 → 失效条件 → 真题调用”组织，不用模板填充未建设节点。':'五类申论能力节点独立建设，训练记录与方法正文分开。',subject==='xingce'?'KNOWLEDGE SYSTEM':'SHENLUN LAB'));
