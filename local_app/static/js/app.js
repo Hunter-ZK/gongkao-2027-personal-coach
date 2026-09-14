@@ -9,16 +9,27 @@ import { renderProgress } from './pages/progress.js';
 import { renderMethods } from './pages/methods.js';
 import { renderSettings } from './pages/settings.js';
 import { renderCoachPage } from './pages/coach.js';
-import { initZenMode } from './privacy.js';
+import { initZenMode, toggleZenMode, zenModeEnabled } from './privacy.js';
 
 const sidebar = document.querySelector('.sidebar');
 const menu = document.querySelector('.mobile-menu');
+const zenButton = document.querySelector('#zen-toggle');
 
 function markActiveNavigation() {
   document.querySelectorAll('.side-nav a[data-path]').forEach((anchor) => {
     const isQuestionsCompat = page === '/questions' && anchor.dataset.path === '/trainings';
     anchor.classList.toggle('active', anchor.dataset.path === page || isQuestionsCompat);
   });
+}
+
+function syncZenButton() {
+  if (!zenButton) return;
+  const active = zenModeEnabled();
+  zenButton.classList.toggle('active', active);
+  zenButton.setAttribute('aria-pressed', active ? 'true' : 'false');
+  const label = zenButton.querySelector('span');
+  if (label) label.textContent = active ? '标准模式' : '禅模式';
+  zenButton.title = active ? '退出禅模式，恢复备考名称' : '隐藏备考、公考、错题等显眼字样（Alt+Z）';
 }
 
 async function loadKnowledgeProgress() {
@@ -28,7 +39,7 @@ async function loadKnowledgeProgress() {
     const rows = await api('/api/knowledge/tree');
     const list = rows.filter((row) => row.subject === 'xingce');
     const built = list.filter((row) => row.build_status !== '未建设').length;
-    badge.textContent = built ? `${built}/${list.length}` : '';
+    badge.textContent = list.length ? `${built}/${list.length}` : '';
   } catch (_) {
     badge.textContent = '';
   }
@@ -37,7 +48,11 @@ async function loadKnowledgeProgress() {
 function setToday() {
   const label = document.querySelector('.today-label');
   if (!label) return;
-  label.textContent = new Intl.DateTimeFormat('zh-CN', { month:'long', day:'numeric', weekday:'short' }).format(new Date());
+  label.textContent = new Intl.DateTimeFormat('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  }).format(new Date());
 }
 
 async function boot() {
@@ -57,7 +72,7 @@ async function boot() {
       case '/import': return renderImport();
       case '/knowledge': return renderKnowledge('xingce');
       case '/shenlun': return renderKnowledge('shenlun');
-      case '/coach': return localStorage.getItem('liano.aiCoachEnabled') === '1' ? renderCoachPage() : renderSettings();
+      case '/coach': return renderCoachPage();
       case '/plan': return renderPlan();
       case '/progress': return renderProgress();
       case '/methods': return renderMethods();
@@ -71,13 +86,16 @@ async function boot() {
 
 let gPending = false;
 document.addEventListener('keydown', async (event) => {
-  if (event.altKey && event.key.toLowerCase() === 'z') return;
+  if (event.altKey && event.key.toLowerCase() === 'z') {
+    setTimeout(syncZenButton, 0);
+    return;
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault();
     document.querySelector('#help-dialog')?.showModal();
     return;
   }
-  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
   if (event.key === 'Escape') {
     document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close());
     sidebar?.classList.remove('mobile-open');
@@ -98,11 +116,13 @@ document.addEventListener('keydown', async (event) => {
     return;
   }
   if (gPending) {
-    const routes = { d:'/', t:'/today', k:'/knowledge', r:'/review' };
+    const routes = { d: '/', t: '/today', k: '/knowledge', r: '/review' };
     const target = routes[event.key.toLowerCase()];
     if (target) location.href = target;
   }
-  if (page === '/review' && ['a','b','c','d'].includes(event.key.toLowerCase())) setReviewAnswer(event.key.toUpperCase());
+  if (page === '/review' && ['a', 'b', 'c', 'd'].includes(event.key.toLowerCase())) {
+    setReviewAnswer(event.key.toUpperCase());
+  }
 });
 
 markActiveNavigation();
@@ -110,4 +130,11 @@ setToday();
 loadKnowledgeProgress();
 if (menu && sidebar) menu.onclick = () => sidebar.classList.toggle('mobile-open');
 initZenMode();
+syncZenButton();
+if (zenButton) {
+  zenButton.onclick = () => {
+    toggleZenMode();
+    syncZenButton();
+  };
+}
 boot();
