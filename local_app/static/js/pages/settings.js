@@ -49,7 +49,7 @@ export async function renderSettings() {
 
   const syncStatusText = sync.available
     ? `分支 ${sync.branch || '—'} · 最近同步 ${sync.last_sync_at || '尚未同步'}${sync.remote_device ? ` · 云端设备 ${sync.remote_device}` : ''}`
-    : (sync.error || '当前目录不是可同步的 Git 克隆仓库');
+    : (sync.error || '暂时无法访问私有同步仓库');
   main.append(panel('公司 / 家里双设备同步',
     h('div', { class: `integration-status ${sync.available ? 'is-ready' : ''}` },
       h('strong', {}, 'Git Checkpoint Sync'),
@@ -58,7 +58,8 @@ export async function renderSettings() {
     ),
     h('div', { class: 'settings-list' },
       row('当前状态', h('span', {}, syncStatusText), '系统同步学习数据库与题目图片；拉取前会自动备份本机数据库。'),
-      row('远端仓库', h('code', {}, sync.origin || '—'), '当前实现复用本项目 Git remote；API Key、密钥配置和临时文件不会进入同步快照。'),
+      row('私有同步仓库', h('code', {}, sync.origin || '—'), '默认使用 Civil_gemini2 的 gongkao-personal-data 私有分支作为数据交换区；公开公考代码仓库不会保存你的学习数据库、题目图片或 API Key。'),
+      row('首次使用', h('span', {}, sync.initialized ? '本机同步缓存已建立' : '点击提交/拉取时自动初始化'), '若本机 Git 尚未登录 GitHub，只需完成一次 GitHub 身份认证。'),
       row('冲突保护', h('span', { class: 'tag correct' }, '已启用'), '本机和云端同时存在新数据时不会静默覆盖，会先阻止操作并提示。'),
     ),
     h('div', { class: 'actions' },
@@ -74,7 +75,7 @@ export async function renderSettings() {
       h('button', { class: 'secondary', disabled: !sync.available, onclick: async () => {
         try {
           const result = await jpost('/api/sync/pull', { force: false });
-          alert(`拉取完成：${result.revision || '最新版本'}。${result.restart_recommended ? '代码也有更新，建议重启工作台。' : '现在可直接继续学习。'}`);
+          alert(`拉取完成：${result.revision || '最新版本'}。现在可直接继续学习。`);
           location.reload();
         } catch (error) {
           if (/未提交学习数据|本机有未提交/.test(error.message) && confirm(`${error.message}\n\n是否强制使用云端版本？系统会先备份本机数据库。`)) {
@@ -153,7 +154,7 @@ export async function renderSettings() {
   ));
 
   main.append(panel('本地数据',
-    h('p', { class: 'subtle' }, settings.data_policy || '运行时数据保存在本机 SQLite；跨设备通过 Git Checkpoint 同步。'),
+    h('p', { class: 'subtle' }, settings.data_policy || '运行时数据保存在本机 SQLite；跨设备通过私有 Git Checkpoint 同步。'),
     h('div', { class: 'actions' }, h('button', { class: 'secondary', onclick: async () => {
       const exportResult = await jpost('/api/export');
       location.href = `/api/export/${exportResult.export_id}/download`;
