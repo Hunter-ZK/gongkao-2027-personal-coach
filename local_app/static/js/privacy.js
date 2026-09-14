@@ -7,7 +7,11 @@ const replacements = [
   ['能力体系', '知识体系'], ['AI 方法教练', 'AI 助手'], ['AI方法教练', 'AI助手'], ['行测方法体系', '方法库'], ['行测体系', '方法库'],
   ['申论工坊', '写作区'], ['备考路线', '阶段计划'], ['备考规划', '阶段计划'],
   ['国家公务员考试', '项目A'], ['公务员考试', '职业项目'], ['国考副省级', '项目A'], ['广东省考', '项目B'], ['国考', '项目A'], ['省考', '项目B'],
-  ['网友红领巾', '来源A'], ['花生十三', '来源B'], ['张弓', '来源C'], ['薛睿', '来源D'], ['小P', '来源E'],
+  ['网友红领巾', '来源A'], ['花生十三', '来源B'], ['阿里木江', '来源C'], ['陈怀安', '来源D'], ['莫等闲', '来源E'], ['黄昏后摇', '来源F'],
+  ['张弓', '来源G'], ['薛睿', '来源H'], ['小P', '来源I'],
+  ['资料分析', '数据分析'], ['判断推理', '逻辑分析'], ['言语理解', '文本分析'], ['数量关系', '数量分析'], ['常识判断', '知识检查'],
+  ['图形推理', '图形分析'], ['逻辑判断', '逻辑分析'], ['数学运算', '数量计算'], ['数字推理', '数字规律'], ['科学推理', '科学分析'], ['政治理论', '政策材料'],
+  ['考场', '现场'], ['考生', '使用者'], ['老师', '来源'],
   ['正确答案', '参考结果'], ['你的答案', '当前结果'], ['正确率', '命中率'], ['题库', '资料库'], ['错题', '问题'], ['复训', '复盘'],
   ['答题', '处理'], ['做题', '处理'], ['题目', '条目'], ['题型', '类型'], ['作答', '记录'], ['真题', '历史样本'], ['模考', '模拟任务'], ['刷题', '批量处理'],
   ['练习', '记录'], ['答案', '结果'], ['得分', '指标'], ['分数', '指标'], ['上岸', '达成目标'], ['公务员', '岗位'], ['考公', '工作计划'], ['粉笔', '来源A'],
@@ -40,6 +44,9 @@ function walk(root = document.body) {
   let node;
   while ((node = walker.nextNode())) applyTextNode(node);
 }
+function emitChange() {
+  try { window.dispatchEvent(new CustomEvent('liano:zenchange', { detail: { active } })); } catch (_) {}
+}
 function startObserver() {
   if (!globalThis.MutationObserver) return;
   observer?.disconnect();
@@ -69,6 +76,7 @@ function enable() {
   document.title = 'Work Notes · Workspace';
   walk();
   startObserver();
+  emitChange();
 }
 function disable() {
   if (!active) return;
@@ -81,6 +89,7 @@ function disable() {
   if (document.documentElement) delete document.documentElement.dataset.zen;
   try { localStorage.removeItem(ZEN_KEY); } catch {}
   document.title = originalTitle;
+  emitChange();
 }
 export function zenModeEnabled() {
   if (active) return true;
