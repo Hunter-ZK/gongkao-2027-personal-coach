@@ -6,6 +6,7 @@ on:
       - main
       - rebuild/workbench-v1
       - feature/workbench-v3-gemini-analytics-ai
+      - feature/civil-gemini2-exact-frontend
   pull_request:
 
 jobs:
@@ -33,6 +34,12 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r requirements.txt
           python -m pip install pytest httpx
+      - name: Install and build Civil Gemini React frontend
+        run: |
+          cd frontend
+          npm install
+          npm run lint
+          npm run build
       - name: Build formal knowledge coverage and seed clean database
         run: |
           python tools/generate_missing_nodes.py
@@ -42,9 +49,9 @@ jobs:
         run: python -m pytest -q -rs
       - name: Compile Python
         run: python -m compileall -q .
-      - name: Strict frontend syntax check
+      - name: Strict legacy frontend syntax check
         run: python tools/check_frontend.py
-      - name: Frontend boot smoke
+      - name: Legacy frontend boot smoke
         run: node tests/frontend_boot_smoke.mjs
       - name: Visual system lint
         run: python tools/css_lint.py static/css templates static/js

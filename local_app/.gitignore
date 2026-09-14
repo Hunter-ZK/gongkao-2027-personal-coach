@@ -2,6 +2,7 @@
 __pycache__/
 .pytest_cache/
 *.py[cod]
+frontend/node_modules/
 data/study.db
 data/study.db-shm
 data/study.db-wal
