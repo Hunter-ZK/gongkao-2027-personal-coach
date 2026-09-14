@@ -4,100 +4,64 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>{{ page_title }} · 2027 公考私教</title>
-  <script>try{window.__lianoNormalTitle=document.title;if(localStorage.getItem('liano.zen')==='1'){document.documentElement.dataset.zen='1';document.title='Work Notes · Workspace'}}catch(e){}</script>
+  <title>{{ page_title }} · 2027 公考备考工作台</title>
+  <script>
+    try {
+      window.__lianoNormalTitle = document.title;
+      if (localStorage.getItem('liano.zen') === '1') {
+        document.documentElement.dataset.zen = '1';
+        document.title = 'Work Notes · Workspace';
+      }
+    } catch (e) {}
+  </script>
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body data-page="{{ page_path }}">
-  <div class="narrow-warning">当前窗口较窄，建议使用 1200px 以上宽度以获得完整工作台体验。</div>
-
+  <div class="narrow-warning">这个工作台为桌面设计，当前窗口较窄，部分表格会横向滚动。</div>
   <aside class="sidebar">
     <div class="brand-block">
-      <a class="brand" href="/" aria-label="返回工作台总览">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 3l6.7 2.4v5.4c0 4.2-2.7 8-6.7 10.2-4-2.2-6.7-6-6.7-10.2V5.4L12 3z"/><path d="M8.8 12.1l2 2 4.5-5"/></svg>
-        </span>
-        <span class="brand-copy"><strong>2027 公考私教</strong><small>Personal Exam OS</small></span>
+      <a class="brand" href="/" aria-label="返回总览">
+        <span class="brand-mark" aria-hidden="true"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#book"></use></svg></span>
+        <span class="brand-copy"><strong>2027 公考备考工作台</strong><small>个人学习与训练记录</small></span>
       </a>
-      <div class="target-chip">
-        <span class="target-dot"></span>
-        <div><small>战略主攻</small><strong>广东省直 / 深圳市直</strong></div>
-      </div>
     </div>
-
     <nav class="side-nav" aria-label="主导航">
-      <div class="nav-label">今日作战</div>
-      <a href="/" data-path="/"><span class="nav-ico">⌂</span><span>学习驾驶舱</span></a>
-      <a href="/today" data-path="/today"><span class="nav-ico">✓</span><span>今日任务</span><em>Focus</em></a>
-      <a href="/timer" data-path="/timer"><span class="nav-ico">◷</span><span>深度计时</span></a>
-
-      <div class="nav-label">训练闭环</div>
-      <a href="/trainings" data-path="/trainings"><span class="nav-ico">▤</span><span>训练记录</span></a>
-      <a href="/questions" data-path="/questions"><span class="nav-ico">□</span><span>题库</span></a>
-      <a href="/mistakes" data-path="/mistakes"><span class="nav-ico">!</span><span>错题矩阵</span></a>
-      <a href="/review" data-path="/review"><span class="nav-ico">↻</span><span>错题复训</span></a>
-      <a href="/import" data-path="/import"><span class="nav-ico">⇧</span><span>真题导入</span></a>
-
-      <div class="nav-label">能力体系</div>
-      <a href="/coach" data-path="/coach"><span class="nav-ico">AI</span><span>AI 方法教练</span><em>DeepSeek</em></a>
-      <a href="/knowledge" data-path="/knowledge"><span class="nav-ico">◇</span><span>行测方法体系</span><em>30</em></a>
-      <a href="/shenlun" data-path="/shenlun"><span class="nav-ico">✎</span><span>申论工坊</span><em>5</em></a>
-      <a href="/plan" data-path="/plan"><span class="nav-ico">◎</span><span>备考路线</span></a>
-      <a href="/progress" data-path="/progress"><span class="nav-ico">↗</span><span>能力趋势</span></a>
-      <a href="/methods" data-path="/methods"><span class="nav-ico">✦</span><span>方法与结论</span></a>
+      <div class="nav-label">今天</div>
+      <a href="/" data-path="/"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#grid"></use></svg><span>总览</span></a>
+      <a href="/today" data-path="/today"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#tasks"></use></svg><span>今日任务</span></a>
+      <a href="/timer" data-path="/timer"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#stopwatch"></use></svg><span>学习计时</span></a>
+      <div class="nav-label">训练</div>
+      <a href="/trainings" data-path="/trainings"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#table"></use></svg><span>训练记录</span></a>
+      <a href="/mistakes" data-path="/mistakes"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#mistake"></use></svg><span>错题本</span></a>
+      <a href="/review" data-path="/review"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#review"></use></svg><span>错题复训</span></a>
+      <a href="/import" data-path="/import"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#import"></use></svg><span>导入</span></a>
+      <div class="nav-label">体系</div>
+      <a href="/knowledge" data-path="/knowledge"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#book"></use></svg><span>行测体系</span><em id="knowledge-progress"></em></a>
+      <a href="/shenlun" data-path="/shenlun"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#pen"></use></svg><span>申论</span></a>
+      <a href="/plan" data-path="/plan"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#calendar"></use></svg><span>备考规划</span></a>
+      <a href="/progress" data-path="/progress"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#trend"></use></svg><span>能力趋势</span></a>
     </nav>
-
     <div class="sidebar-bottom">
       <div class="exam-stack">
         {% for e in exams %}
-        <div class="exam-card">
-          <div class="exam-card-head">
-            <span>{{ '国考副省级' if e.code=='national' else '广东省考' }}</span>
-            {% if not e.is_official %}<em title="{{e.date_source}}">预估</em>{% endif %}
-          </div>
-          <strong>{{ e.days_left if e.days_left is not none else '—' }}<small> 天</small></strong>
-          <span class="exam-date">{{ e.exam_date }}</span>
-        </div>
+        <div class="exam-card"><div class="exam-card-head"><span>{{ '国考副省级' if e.code=='national' else '广东省考' }}</span>{% if not e.is_official %}<em title="{{ e.date_source }}">预估</em>{% endif %}</div><strong>{{ e.days_left if e.days_left is not none else '—' }}<small>天</small></strong><span class="exam-date">{{ e.exam_date }}</span></div>
         {% endfor %}
       </div>
-      <a class="settings-link" href="/settings"><span>⚙</span><span>偏好设置与备份</span></a>
-      <div class="local-status"><span></span>本地数据引擎已连接</div>
+      <a class="sidebar-utility" href="/methods"><svg class="utility-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#bookmark"></use></svg><span>方法与结论</span></a>
+      <a class="sidebar-utility" href="/settings"><svg class="utility-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#sliders"></use></svg><span>设置</span></a>
     </div>
   </aside>
-
   <div class="app-shell">
     <header class="topbar">
-      <div class="top-left">
-        <button class="mobile-menu" aria-label="菜单">☰</button>
-        <div class="breadcrumb"><span>2027 备考</span><b>/</b><strong>{{ page_title }}</strong></div>
-      </div>
-      <div class="top-actions">
-        <button class="zen-toggle" type="button" aria-pressed="false" title="切换专注视图（Alt+Z）"><span class="zen-dot"></span><span class="zen-label">禅模式</span></button>
-        <button class="command-pill" type="button" onclick="document.querySelector('#help-dialog').showModal()"><span>⌘</span><span>快捷键</span><kbd>?</kbd></button>
-        <div id="mini-timer" class="mini-timer"><button class="timer-quick" data-action="timer-start-shortcut">开始专注</button></div>
-        <div class="date-chip"><span class="date-dot"></span><span class="today-label"></span></div>
-      </div>
+      <div class="top-left"><button class="mobile-menu icon-button" aria-label="打开菜单" type="button"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#menu"></use></svg></button><div class="breadcrumb"><span>备考工作台</span><b>/</b><strong>{{ page_title }}</strong></div></div>
+      <div class="top-actions"><div id="mini-timer" class="mini-timer"><button class="timer-quick" type="button">开始计时</button></div><div class="date-chip"><span class="today-label"></span></div><button class="icon-button" type="button" aria-label="查看快捷键" onclick="document.querySelector('#help-dialog').showModal()"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#help"></use></svg></button></div>
     </header>
-
-    <main id="app-main" class="main"><div class="loading-shell"><span class="loading-orbit"></span><strong>正在加载你的备考状态</strong><small>读取本地 SQLite 数据</small></div></main>
+    <main id="app-main" class="main"><div class="loading-shell"><strong>加载中</strong></div></main>
   </div>
-
   <dialog id="help-dialog" class="command-dialog">
-    <div class="dialog-head"><div><span class="eyebrow">Keyboard</span><h2>快捷操作</h2></div><button class="icon-button" onclick="this.closest('dialog').close()">×</button></div>
-    <div class="shortcut-grid">
-      <div><kbd>Alt</kbd><kbd>Z</kbd><span>切换禅模式</span></div>
-      <div><kbd>Ctrl / ⌘</kbd><kbd>K</kbd><span>打开快捷操作</span></div>
-      <div><kbd>T</kbd><span>打开深度计时</span></div>
-      <div><kbd>G</kbd><kbd>D</kbd><span>返回驾驶舱</span></div>
-      <div><kbd>G</kbd><kbd>T</kbd><span>今日任务</span></div>
-      <div><kbd>G</kbd><kbd>K</kbd><span>知识体系</span></div>
-      <div><kbd>G</kbd><kbd>C</kbd><span>AI 方法教练</span></div>
-      <div><kbd>G</kbd><kbd>R</kbd><span>错题复训</span></div>
-      <div><kbd>A–D</kbd><span>复训选择答案</span></div>
-      <div><kbd>Esc</kbd><span>关闭浮层</span></div>
-    </div>
+    <div class="dialog-head"><h2>快捷键</h2><button class="icon-button" type="button" aria-label="关闭" onclick="this.closest('dialog').close()"><svg class="nav-icon" viewBox="0 0 24 24"><use href="/static/img/icons.svg#close"></use></svg></button></div>
+    <div class="shortcut-grid"><div><kbd>Ctrl / Cmd</kbd><kbd>K</kbd><span>全局搜索</span></div><div><kbd>T</kbd><span>学习计时</span></div><div><kbd>G</kbd><kbd>D</kbd><span>总览</span></div><div><kbd>G</kbd><kbd>T</kbd><span>今日任务</span></div><div><kbd>G</kbd><kbd>K</kbd><span>行测体系</span></div><div><kbd>G</kbd><kbd>R</kbd><span>错题复训</span></div><div><kbd>A–D</kbd><span>选择答案</span></div><div><kbd>Esc</kbd><span>关闭浮层</span></div></div>
   </dialog>
-
   <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>

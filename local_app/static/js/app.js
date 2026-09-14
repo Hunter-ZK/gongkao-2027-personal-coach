@@ -1,34 +1,39 @@
-import { page, loadTimer, err, renderTimerPage, api } from './runtime.js';
+import { page, loadTimer, err, renderTimerPage, api, timerState, toggleTimer } from './runtime.js';
 import { renderDashboard, renderToday } from './pages/dashboard.js';
-import { renderTrainings, renderQuestionBank, renderImport } from './pages/learning.js';
-import { renderMistakes, renderReview, setReviewAnswer } from './pages/mistakes-v2.js';
+import { renderTrainings, renderQuestionBank, renderImport, setReviewAnswer } from './pages/learning.js';
 import { renderPlan, renderProgress, renderMethods, renderSettings } from './pages/knowledge.js';
-import { renderKnowledge } from './pages/knowledge-v2.js';
-import { renderXingceMethodSystem } from './pages/methods-v2.js';
+import { renderKnowledge as renderKnowledgeWorkspace } from './pages/knowledge-v2.js';
+import { renderMistakes, renderReview } from './pages/mistakes-v2.js';
 import { renderCoachPage } from './pages/coach.js';
 import { initZenMode } from './privacy.js';
 
-document.querySelectorAll('.side-nav a[data-path]').forEach((a) => {
-  if (a.dataset.path === page) a.classList.add('active');
-});
+const sidebar = document.querySelector('.sidebar');
+const menu = document.querySelector('.mobile-menu');
 
-const knowledgeBadge = document.querySelector('.side-nav a[data-path="/knowledge"] em');
-if (knowledgeBadge) {
-  api('/api/knowledge/method-summary')
-    .then((x) => { knowledgeBadge.textContent = String(x.total ?? '方法'); })
-    .catch(() => { knowledgeBadge.textContent = '方法'; });
+function markActiveNavigation() {
+  document.querySelectorAll('.side-nav a[data-path]').forEach((anchor) => {
+    anchor.classList.toggle('active', anchor.dataset.path === page);
+  });
 }
 
-document.querySelector('.today-label').textContent = new Intl.DateTimeFormat('zh-CN', {
-  month: 'long',
-  day: 'numeric',
-  weekday: 'short',
-}).format(new Date());
+async function loadKnowledgeProgress() {
+  const badge = document.querySelector('#knowledge-progress');
+  if (!badge) return;
+  try {
+    const rows = await api('/api/knowledge/tree');
+    const list = rows.filter((row) => row.subject === 'xingce');
+    const built = list.filter((row) => row.build_status !== '未建设').length;
+    badge.textContent = list.length ? `${built}/${list.length}` : '';
+  } catch (_) {
+    badge.textContent = '';
+  }
+}
 
-const menu = document.querySelector('.mobile-menu');
-const sidebar = document.querySelector('.sidebar');
-if (menu && sidebar) menu.onclick = () => sidebar.classList.toggle('mobile-open');
-initZenMode();
+function setToday() {
+  const label = document.querySelector('.today-label');
+  if (!label) return;
+  label.textContent = new Intl.DateTimeFormat('zh-CN', { month:'long', day:'numeric', weekday:'short' }).format(new Date());
+}
 
 async function boot() {
   try {
@@ -42,8 +47,8 @@ async function boot() {
       case '/mistakes': return renderMistakes();
       case '/review': return renderReview();
       case '/import': return renderImport();
-      case '/knowledge': return new URLSearchParams(location.search).get('view') === 'nodes' ? renderKnowledge('xingce') : renderXingceMethodSystem();
-      case '/shenlun': return renderKnowledge('shenlun');
+      case '/knowledge': return renderKnowledgeWorkspace('xingce');
+      case '/shenlun': return renderKnowledgeWorkspace('shenlun');
       case '/coach': return renderCoachPage();
       case '/plan': return renderPlan();
       case '/progress': return renderProgress();
@@ -51,39 +56,50 @@ async function boot() {
       case '/settings': return renderSettings();
       default: return renderDashboard();
     }
-  } catch (e) {
-    err(e);
+  } catch (error) {
+    err(error);
   }
 }
 
 let gPending = false;
-document.addEventListener('keydown', (e) => {
-  if (e.altKey && e.key.toLowerCase() === 'z') return;
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-    e.preventDefault();
+document.addEventListener('keydown', async (event) => {
+  if (event.altKey && event.key.toLowerCase() === 'z') return;
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault();
     document.querySelector('#help-dialog')?.showModal();
     return;
   }
-  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
-  if (e.key === 'Escape') {
-    document.querySelectorAll('dialog[open]').forEach((x) => x.close());
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+  if (event.key === 'Escape') {
+    document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close());
     sidebar?.classList.remove('mobile-open');
     return;
   }
-  if (e.key.toLowerCase() === 't') {
-    location.href = '/timer';
+  if (event.key.toLowerCase() === 't') {
+    if (timerState.status === 'running' || timerState.status === 'paused') {
+      event.preventDefault();
+      await toggleTimer();
+    } else {
+      location.href = '/timer';
+    }
     return;
   }
-  if (e.key.toLowerCase() === 'g') {
+  if (event.key.toLowerCase() === 'g') {
     gPending = true;
     setTimeout(() => { gPending = false; }, 800);
     return;
   }
   if (gPending) {
-    const map = { d: '/', t: '/today', k: '/knowledge', q: '/questions', r: '/review', c: '/coach' };
-    if (map[e.key.toLowerCase()]) location.href = map[e.key.toLowerCase()];
+    const routes = { d:'/', t:'/today', k:'/knowledge', r:'/review' };
+    const target = routes[event.key.toLowerCase()];
+    if (target) location.href = target;
   }
-  if (page === '/review' && ['a', 'b', 'c', 'd'].includes(e.key.toLowerCase())) setReviewAnswer(e.key.toUpperCase());
+  if (page === '/review' && ['a','b','c','d'].includes(event.key.toLowerCase())) setReviewAnswer(event.key.toUpperCase());
 });
 
+markActiveNavigation();
+setToday();
+loadKnowledgeProgress();
+if (menu && sidebar) menu.onclick = () => sidebar.classList.toggle('mobile-open');
+initZenMode();
 boot();

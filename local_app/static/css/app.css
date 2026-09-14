@@ -1,9 +1,4 @@
-@import url('./core.css');
-@import url('./dashboard-a.css');
-@import url('./dashboard-b.css');
+@import url('./tokens.css');
+@import url('./base.css');
+@import url('./components.css');
 @import url('./pages.css');
-@import url('./coach.css');
-@import url('./method-library.css');
-@import url('./zen.css');
-@import url('./library-import.css');
-@import url('./study-experience.css');
