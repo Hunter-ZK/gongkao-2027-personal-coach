@@ -19,7 +19,7 @@ DEFAULT_MODEL = "deepseek-v4-flash"
 
 KEYWORD_GROUPS = {
     "资料分析": ["资料", "基期", "现期", "增长率", "增长量", "比重", "百分点", "平均数", "倍数", "截位", "直除", "415", "份数", "ABRX", "混合增长"],
-    "判断推理": ["判断", "逻辑", "加强", "削弱", "前提", "假设", "翻译推理", "分析推理", "类比", "图形", "图推", "定义判断"],
+    "判断推理": ["判断", "逻辑", "加强", "削弱", "前提", "假设", "翻译推理", "分析推理", "类比", "图形", "图推", "定义判断", "六面体"],
     "言语理解": ["言语", "主旨", "中心", "意图", "逻辑填空", "成语", "词语", "排序", "衔接", "细节"],
     "数量关系": ["数量", "排列", "组合", "概率", "工程", "行程", "利润", "容斥", "最值", "几何", "年龄", "方程", "牛吃草", "数字推理"],
     "常识判断": ["常识", "政治", "法律", "科技", "措辞", "绝对词"],
@@ -47,7 +47,7 @@ def load_sources() -> list[dict[str, Any]]:
 def _method_text(item: dict[str, Any]) -> str:
     body_parts: list[str] = []
     for field in (
-        "module", "definition", "signals", "principle", "steps", "example", "boundary",
+        "source_method_label", "module", "definition", "signals", "principle", "steps", "example", "boundary",
         "comparison", "variants", "exam_command", "evidence", "source_note",
     ):
         value = item.get(field)
@@ -61,7 +61,7 @@ def _method_text(item: dict[str, Any]) -> str:
 def load_method_documents() -> list[dict[str, str]]:
     docs: list[dict[str, str]] = []
 
-    # 总方法论/复盘协议仍保存在可读 JSON 索引中。
+    # 总方法论/复盘协议保存在可读 JSON 索引中，作为元方法参与检索。
     for path in sorted(METHOD_DIR.glob("*.json")):
         data = _read_json(path, {})
         for key in ("principles", "review_protocols", "items"):
@@ -71,12 +71,12 @@ def load_method_documents() -> list[dict[str, str]]:
                 title = str(item.get("title") or item.get("name") or item.get("id") or path.stem)
                 docs.append({"kind": "method", "title": title, "source": f"content/methods/{path.name}", "text": _method_text(item) or str(item.get("body") or "")})
 
-    # 80 个正式方法由结构化方法包统一加载，避免重复维护两套正文。
+    # V2 正文的 79 个正式方法单元统一从 source-grounded catalog 加载。
     for item in load_catalog():
         docs.append({
             "kind": "method",
             "title": str(item.get("title") or item.get("id")),
-            "source": "content/methods/all_methods.json.gz",
+            "source": "content/methods/source/*.json",
             "text": _method_text(item),
         })
     return docs
