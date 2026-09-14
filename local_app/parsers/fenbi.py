@@ -7,7 +7,7 @@ from . import fenbi_impl
 
 class FenbiParser(BaseParser):
     name = "fenbi_quick_practice"
-    version = "2.0"
+    version = "3.0"
 
     def detect(self, pdf_path: Path) -> float:
         try:
