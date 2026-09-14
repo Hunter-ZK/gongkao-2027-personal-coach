@@ -22,10 +22,52 @@ function stat(label, value) {
   return h('div', { class: 'mini-stat' }, h('small', {}, label), h('strong', {}, String(value ?? '—')));
 }
 
+function autoStat(label, value) {
+  return h('div', {}, h('span', {}, label), h('strong', {}, String(value ?? '—')));
+}
+
+async function autoCommit(importId, parsed) {
+  const host = document.querySelector('#proof-host');
+  if (host) host.replaceChildren(h('div', { class: 'import-auto-success' },
+    h('h3', {}, '固定版式核验通过，正在自动入库…'),
+    h('p', {}, '系统正在写入题库、个人作答和错题；错题会继续自动交给 Skill 驱动的 AI 分析。'),
+  ));
+  const committed = await jpost(`/api/import/${importId}/commit`, {
+    trained_on: new Date().toISOString().slice(0, 10),
+    duration_sec: 0,
+    source: 'fenbi_random',
+    exam_type: 'na',
+    note: '固定粉笔版式自动核验并入库',
+  });
+  const ai = committed.ai || {};
+  if (!host) return committed;
+  host.replaceChildren(h('section', { class: 'import-auto-success' },
+    h('div', {},
+      h('h3', {}, 'PDF 已完成自动归档'),
+      h('p', {}, '可信固定版式无需逐题人工确认：训练、题库、个人作答与错题已形成长期记录。'),
+    ),
+    h('div', { class: 'import-auto-stats' },
+      autoStat('识别题数', parsed.total),
+      autoStat('题库条目', committed.question_bank_items ?? parsed.total),
+      autoStat('新增错题', committed.mistakes_created ?? 0),
+      autoStat('AI 自动分析', ai.configured ? `${ai.scheduled || 0} 道` : '待配置'),
+    ),
+    h('p', {}, ai.configured
+      ? `AI 已在后台分析 ${ai.scheduled || 0} 道错题：会优先调用你提供的 gongkao-method-coach Skill 与 V2 方法库，生成标准解、考场快解、陷阱、建议错因和关联知识节点。`
+      : '错题已正常入库。当前尚未配置 AI API Key，配置后可在错题页批量重新解析，不影响题库和复训。'),
+    h('div', { class: 'actions' },
+      h('a', { class: 'primary', href: committed.mistakes_created > 0 ? '/mistakes' : '/trainings' }, committed.mistakes_created > 0 ? '查看 AI 错题分析' : '查看训练记录'),
+      h('a', { class: 'secondary', href: '/knowledge' }, '进入行测知识体系'),
+      h('button', { class: 'secondary', onclick: () => renderImport() }, '继续导入 PDF'),
+    ),
+  ));
+  return committed;
+}
+
 export async function renderImport() {
   clear(main).append(title(
-    '导入',
-    '粉笔“快速智能练习”会保留题干、选项、图表、正确答案和你的作答；错题入库后可自动交给 DeepSeek 按本地方法体系解析。',
+    '智能练习导入',
+    '把统一版式的粉笔 PDF 直接拖进来：可信模板自动核验并入库，只有结构异常题才进入人工校对；错题随后自动交给 Skill 驱动的 AI 分析。',
   ));
   const input = h('input', { type: 'file', accept: '.pdf', id: 'pdf-file' });
   const msg = h('div', { class: 'subtle' });
@@ -33,20 +75,43 @@ export async function renderImport() {
     if (!input.files[0]) return alert('请先选择 PDF');
     const fd = new FormData();
     fd.append('file', input.files[0]);
-    msg.textContent = '正在解析 PDF…';
+    msg.textContent = '正在按固定版式解析题目、选项、答案与图片…';
+    upload.disabled = true;
     try {
       const res = await api('/api/import/pdf', { method: 'POST', body: fd });
       msg.textContent = res.message || '解析完成';
-      await showProof(res.import_id);
+      if (res.duplicate) {
+        const proof = await api(`/api/import/${res.import_id}/proof`);
+        if (proof.import?.status === 'verified') {
+          document.querySelector('#proof-host')?.replaceChildren(h('section', { class: 'import-auto-success' },
+            h('h3', {}, '这份 PDF 已经入库'),
+            h('p', {}, '系统按文件哈希识别到重复导入，为避免重复训练记录，本次不会再次写入。'),
+            h('div', { class: 'actions' }, h('a', { class: 'primary', href: '/trainings' }, '查看已有训练')),
+          ));
+        } else {
+          await showProof(res.import_id);
+        }
+        return;
+      }
+      if (res.needs_review === 0 && res.total > 0) {
+        msg.textContent = `已自动核验 ${res.total} 题，正在写入题库和错题…`;
+        await autoCommit(res.import_id, res);
+        msg.textContent = '自动入库完成';
+      } else {
+        msg.textContent = `${res.message}。只需检查异常题，其余题目已经自动核验。`;
+        await showProof(res.import_id);
+      }
     } catch (error) {
       msg.textContent = error.message;
+    } finally {
+      upload.disabled = false;
     }
-  } }, '开始解析');
+  } }, '导入 PDF 并自动归档');
   main.append(
     h('section', { class: 'import-hero' },
-      h('div', { class: 'import-step-kicker' }, 'PDF → 校对 → 题库 / 作答 / 错题 → DeepSeek 解析'),
-      h('h3', {}, '导入真实训练结果'),
-      h('p', {}, '标准粉笔版式可自动核验；结构不完整、图片归属不确定或未知版式仍需人工确认后才进入统计。'),
+      h('div', { class: 'import-step-kicker' }, 'PDF → 固定版式解析 → 题库 / 作答 / 错题 → Skill AI 诊断'),
+      h('h3', {}, '把练习结果直接变成长期学习数据'),
+      h('p', {}, '正常的统一粉笔版式不再要求逐题确认。只有答案缺失、选项不完整、题号断裂或版面变化等异常才会停下来让你校对。'),
       h('div', { class: 'actions', style: 'justify-content:center' }, input, upload),
       msg,
     ),
@@ -168,25 +233,18 @@ async function showProof(id) {
         source: source.value,
         exam_type: 'na',
       });
-      let aiMessage = '';
-      if (res.mistakes_created > 0 && res.training?.id) {
-        try {
-          const ai = await jpost(`/api/coach/analyze-training/${res.training.id}`, {});
-          aiMessage = ai.configured
-            ? `\nDeepSeek：已在后台解析 ${ai.scheduled} 道错题。`
-            : '\nDeepSeek：尚未配置，错题已正常入库，可在设置配置后重新解析。';
-        } catch (error) {
-          aiMessage = `\nDeepSeek 自动解析未启动：${error.message}`;
-        }
-      }
-      alert(`已入库：题库 ${res.question_bank_items || data.questions.length} 题，个人作答 ${res.attempts_created || data.questions.length} 条，新增错题 ${res.mistakes_created}${aiMessage}`);
+      const ai = res.ai || {};
+      const aiMessage = res.mistakes_created > 0
+        ? (ai.configured ? `\nAI：已自动提交 ${ai.scheduled || 0} 道错题解析。` : '\nAI：尚未配置，错题已正常入库，可稍后重新解析。')
+        : '';
+      alert(`已入库：题库 ${res.question_bank_items || data.questions.length} 题，个人作答 ${res.attempts_created || data.questions.length} 条，新增错题 ${res.mistakes_created || 0}${aiMessage}`);
       location.href = res.mistakes_created > 0 ? '/mistakes' : '/trainings';
     } catch (error) {
       alert(error.message);
     }
   } }, data.all_verified ? '直接入库' : '确认并入库');
 
-  host.replaceChildren(panel('导入校对与入库',
+  host.replaceChildren(panel('仅校对异常题',
     h('div', { class: 'import-summary' },
       stat('识别题数', data.questions.length),
       stat('已核验', data.verified_count),
@@ -194,8 +252,8 @@ async function showProof(id) {
       stat('做错', data.wrong_count),
     ),
     h('div', { class: 'import-flow-note' },
-      h('strong', {}, '入库后自动形成三份长期数据'),
-      h('span', {}, '题库保存标准题目 · 作答记录保存你的历次答案 · 错题本保存错误与复训轨迹。已配置 DeepSeek 时，错题会继续自动生成方法解析。'),
+      h('strong', {}, '可信题已经自动核验，不需要重复操作'),
+      h('span', {}, '只修改真正异常的题。入库后题库保存标准题目，作答记录保存历次答案，错题本保存错误与复训轨迹；AI 自动解析错题。'),
     ),
     h('div', { class: 'form-row' },
       h('div', { class: 'field' }, h('label', {}, '训练日期'), dateInput),
@@ -210,7 +268,7 @@ async function showProof(id) {
           seq_list: data.questions.filter((question) => !question.verified).map((question) => question.seq),
         });
         await showProof(id);
-      } }, '人工核对后确认剩余题'),
+      } }, '确认剩余异常题'),
       commitButton,
     ),
   ));
