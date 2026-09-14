@@ -19,13 +19,13 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-MAX_RADIUS = 6
+MAX_RADIUS = 18
 MIN_FONT_SIZE = 12.5
 MAX_SIDEBAR_W = 240
 
 ALLOWED_SHADOW_CONTEXTS = {
     "dialog", "popover", "dropdown", "tooltip", "menu",
-    "overlay", "modal", "float", "toast",
+    "overlay", "modal", "float", "drawer", "toast",
 }
 
 ICON_GLYPHS = "⌂✓◷▤□↻⇧◇✎◎↗✦★☆●◆▲▼■◼▣⊙⊕⊗✧✩➤➜⟶⇨"
