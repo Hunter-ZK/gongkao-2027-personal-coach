@@ -6,14 +6,13 @@ from pathlib import Path
 
 import pymupdf
 
-NUM_COL_X_MAX = 43.5
 HEADER_Y = 80.0
 FOOTER_Y = 790.0
-PAGE_W, PAGE_H = 595.0, 842.0
+PAGE_W = 595.0
 
-RE_QNUM = re.compile(r"^\s*(\d{1,3})[\.．]\s*$")
-RE_CORRECT = re.compile(r"^\s*正确答案\s*[:：]\s*([A-Z]+)\s*$")
-RE_USER = re.compile(r"^\s*你的答案\s*[:：]\s*([A-Z]*)\s*$")
+RE_QEND = re.compile(r"(?:^|\s)(\d{1,3})[\.．]\s*$")
+RE_CORRECT = re.compile(r"^正确答案\s*[:：]\s*([A-D]+)\s*$")
+RE_USER = re.compile(r"^你的答案\s*[:：]\s*([A-D]*)\s*$")
 RE_OPTION = re.compile(r"([A-D])[\.．]\s*")
 RE_GENERATED_BY = re.compile(r"本试卷由粉笔用户(.*?)生成")
 
@@ -50,7 +49,7 @@ class Material:
 @dataclass
 class ParseResult:
     parser_name: str = "fenbi_quick_practice"
-    parser_version: str = "2.0"
+    parser_version: str = "3.0"
     meta: dict = field(default_factory=dict)
     questions: list[ParsedQuestion] = field(default_factory=list)
     materials: list[Material] = field(default_factory=list)
@@ -58,151 +57,239 @@ class ParseResult:
 
 
 @dataclass
-class Elem:
+class Block:
     page: int
-    y0: float
     x0: float
-    kind: str
-    text: str = ""
-    value: str = ""
-    bbox: tuple = ()
-    xref: int = 0
-
-    @property
-    def y1(self) -> float:
-        return self.bbox[3] if self.bbox else self.y0 + 12
+    y0: float
+    x1: float
+    y1: float
+    text: str
 
 
-def _is_watermark(info: dict) -> bool:
-    x0, y0, x1, y1 = info["bbox"]
-    if info.get("xref", 0) == 0:
-        return True
+def _clean_text(text: str) -> str:
+    return " ".join((text or "").replace("\u00a0", " ").split())
+
+
+def _is_header_footer(text: str, y0: float, y1: float) -> bool:
     if y1 < HEADER_Y or y0 > FOOTER_Y:
         return True
-    area = (x1 - x0) * (y1 - y0)
-    return area > PAGE_W * PAGE_H * 0.55
+    if "本试卷由粉笔用户" in text:
+        return True
+    if re.search(r"第\s*\d+\s*页，共\s*\d+\s*页", text):
+        return True
+    return text == "快速智能练习"
 
 
-def extract_elements(doc: pymupdf.Document) -> list[Elem]:
-    elems: list[Elem] = []
+def _blocks(doc: pymupdf.Document) -> list[Block]:
+    rows: list[Block] = []
     for pno, page in enumerate(doc):
-        for block in page.get_text("dict")["blocks"]:
-            if block["type"] != 0:
+        for raw in page.get_text("blocks"):
+            x0, y0, x1, y1, text, *_ = raw
+            text = _clean_text(text)
+            if not text or _is_header_footer(text, y0, y1):
                 continue
-            for line in block["lines"]:
-                spans = line["spans"]
-                if not spans:
-                    continue
-                y0 = min(s["bbox"][1] for s in spans)
-                x0 = min(s["bbox"][0] for s in spans)
-                if y0 < HEADER_Y or y0 > FOOTER_Y:
-                    continue
-                for span in spans:
-                    m = RE_QNUM.match(span["text"])
-                    if m and span["bbox"][0] < NUM_COL_X_MAX:
-                        elems.append(Elem(pno, span["bbox"][1], span["bbox"][0], "qnum", span["text"], m.group(1), tuple(span["bbox"])))
-                text = "".join(s["text"] for s in spans).strip()
-                if not text or RE_QNUM.match(text):
-                    continue
-                mc = RE_CORRECT.match(text)
-                if mc:
-                    elems.append(Elem(pno, y0, x0, "correct", text, mc.group(1)))
-                    continue
-                mu = RE_USER.match(text)
-                if mu:
-                    elems.append(Elem(pno, y0, x0, "user", text, mu.group(1)))
-                    continue
-                elems.append(Elem(pno, y0, x0, "text", text))
-        for info in page.get_image_info(xrefs=True):
-            if _is_watermark(info):
-                continue
-            bbox = tuple(info["bbox"])
-            elems.append(Elem(pno, bbox[1], bbox[0], "image", bbox=bbox, xref=info.get("xref", 0)))
-    elems.sort(key=lambda e: (e.page, round(e.y0, 1), e.x0, 0 if e.kind == "qnum" else 1))
-    return elems
+            rows.append(Block(pno, x0, y0, x1, y1, text))
+    rows.sort(key=lambda b: (b.page, round(b.y0, 1), b.x0))
+    return rows
 
 
-def _split_line_options(text: str) -> list[tuple[str, str]]:
-    matches = list(RE_OPTION.finditer(text))
-    if not matches:
-        return []
-    out: list[tuple[str, str]] = []
-    for i, match in enumerate(matches):
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        out.append((match.group(1), text[match.end() : end].strip()))
+def _pos(block: Block) -> tuple[int, float]:
+    return block.page, block.y0
+
+
+def _question_anchors(blocks: list[Block]) -> list[tuple[int, Block]]:
+    out: list[tuple[int, Block]] = []
+    seen: set[int] = set()
+    for block in blocks:
+        if RE_CORRECT.fullmatch(block.text) or RE_USER.fullmatch(block.text):
+            continue
+        if re.match(r"^[A-D][\.．]", block.text):
+            continue
+        match = RE_QEND.search(block.text)
+        if not match:
+            continue
+        seq = int(match.group(1))
+        if not 1 <= seq <= 200 or seq in seen:
+            continue
+        seen.add(seq)
+        out.append((seq, block))
+    out.sort(key=lambda item: (item[1].page, item[1].y0, item[1].x0))
     return out
 
 
-def _safe_crop(doc: pymupdf.Document, page_no: int, rect: tuple, out: Path | None, dpi: int = 160) -> str:
-    if out is None:
-        return f"crop:p{page_no + 1}:{','.join(str(round(x, 1)) for x in rect)}"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    page = doc[page_no]
-    clip = pymupdf.Rect(*rect) & page.rect
-    page.get_pixmap(clip=clip, dpi=dpi, alpha=False).save(out)
-    return str(out)
-
-
-def _question_crops(doc: pymupdf.Document, seq: int, qstart: Elem, qend: Elem, image_dir: Path | None, next_q: Elem | None, answer_start: Elem | None) -> list[str]:
-    refs: list[str] = []
-    for pno in range(qstart.page, qend.page + 1):
-        y0 = max(HEADER_Y, qstart.y0 - 6) if pno == qstart.page else HEADER_Y
-        y1 = min(FOOTER_Y, qend.y0 + 22) if pno == qend.page else FOOTER_Y
-        if answer_start is not None and answer_start.page == pno:
-            y1 = min(y1, max(y0 + 8, answer_start.y0 - 3))
-        if next_q is not None and next_q.page == pno:
-            y1 = min(y1, max(y0 + 8, next_q.y0 - 4))
-        if y1 - y0 < 8:
+def _answers(blocks: list[Block]) -> list[tuple[str, str, Block]]:
+    out = []
+    for block in blocks:
+        match = RE_CORRECT.fullmatch(block.text)
+        if match:
+            out.append(("correct", match.group(1), block))
             continue
-        out = image_dir / f"q{seq:03d}_p{pno + 1}.png" if image_dir else None
-        refs.append(_safe_crop(doc, pno, (25, y0, 565, y1), out))
+        match = RE_USER.fullmatch(block.text)
+        if match:
+            out.append(("user", match.group(1), block))
+    return sorted(out, key=lambda item: (item[2].page, item[2].y0, item[2].x0))
+
+
+def _strip_question_number(text: str, seq: int) -> str:
+    match = RE_QEND.search(text)
+    if match and int(match.group(1)) == seq:
+        return RE_QEND.sub("", text).strip()
+    return text
+
+
+def _split_content(lines: list[tuple[str, Block]]) -> tuple[str, dict[str, str], list[tuple[str, Block]]]:
+    stem_lines: list[str] = []
+    options: dict[str, str] = {}
+    anchors: list[tuple[str, Block]] = []
+    current: str | None = None
+    for text, block in lines:
+        matches = list(RE_OPTION.finditer(text))
+        if matches:
+            for idx, match in enumerate(matches):
+                end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+                key = match.group(1)
+                value = text[match.end():end].strip()
+                options[key] = (options.get(key, "") + " " + value).strip()
+                anchors.append((key, block))
+                current = key
+            continue
+        if current:
+            options[current] = (options[current] + " " + text).strip()
+        else:
+            stem_lines.append(text)
+    return "".join(stem_lines).strip(), options, anchors
+
+
+def _safe_crop(
+    doc: pymupdf.Document,
+    page_no: int,
+    y0: float,
+    y1: float,
+    output: Path | None,
+    dpi: int = 170,
+) -> str | None:
+    y0 = max(HEADER_Y, y0)
+    y1 = min(FOOTER_Y, y1)
+    if y1 - y0 < 5:
+        return None
+    rect = pymupdf.Rect(25, y0, 570, y1) & doc[page_no].rect
+    if output is None:
+        return f"crop:p{page_no + 1}:25,{round(y0,1)},570,{round(y1,1)}"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    doc[page_no].get_pixmap(clip=rect, dpi=dpi, alpha=False).save(output)
+    return str(output)
+
+
+def _question_images(
+    doc: pymupdf.Document,
+    seq: int,
+    start: Block,
+    answer_pos: tuple[int, float],
+    image_dir: Path | None,
+) -> list[str]:
+    refs: list[str] = []
+    for pno in range(start.page, answer_pos[0] + 1):
+        y0 = start.y0 - 4 if pno == start.page else HEADER_Y
+        y1 = answer_pos[1] - 3 if pno == answer_pos[0] else FOOTER_Y
+        output = image_dir / f"q{seq:03d}_p{pno + 1}.png" if image_dir else None
+        ref = _safe_crop(doc, pno, y0, y1, output)
+        if ref:
+            refs.append(ref)
     return refs
 
 
-def _option_row_crop(doc: pymupdf.Document, seq: int, key: str, anchor: tuple, next_anchor: tuple | None, image_dir: Path | None) -> str:
-    page_no, y0, x0 = anchor
-    if next_anchor and next_anchor[0] == page_no and next_anchor[1] > y0:
-        y1 = min(next_anchor[1] - 2, FOOTER_Y)
-    else:
-        y1 = min(y0 + 110, FOOTER_Y)
-    out = image_dir / f"q{seq:03d}_opt_{key}_p{page_no + 1}.png" if image_dir else None
-    return _safe_crop(doc, page_no, (max(25, x0 - 4), max(HEADER_Y, y0 - 3), 565, y1), out)
-
-
-def _material_crop(doc: pymupdf.Document, mid: int, start_pos: tuple[int, float], end_pos: tuple[int, float], image_dir: Path | None) -> list[str]:
-    refs: list[str] = []
-    start_page, start_y = start_pos
-    end_page, end_y = end_pos
-    for pno in range(start_page, end_page + 1):
-        y0 = max(HEADER_Y, start_y) if pno == start_page else HEADER_Y
-        y1 = min(FOOTER_Y, end_y) if pno == end_page else FOOTER_Y
-        if y1 - y0 < 8:
+def _empty_option_images(
+    doc: pymupdf.Document,
+    seq: int,
+    option_anchors: list[tuple[str, Block]],
+    answer_pos: tuple[int, float],
+    options: dict[str, str],
+    image_dir: Path | None,
+) -> dict[str, str]:
+    refs: dict[str, str] = {}
+    for idx, (key, block) in enumerate(option_anchors):
+        if options.get(key):
             continue
-        out = image_dir / f"material_{mid:02d}_p{pno + 1}.png" if image_dir else None
-        refs.append(_safe_crop(doc, pno, (25, y0, 565, y1), out))
+        next_anchor = next(
+            (
+                other
+                for _, other in option_anchors[idx + 1:]
+                if other.page == block.page and other.y0 > block.y0
+            ),
+            None,
+        )
+        if next_anchor:
+            y1 = next_anchor.y0 - 2
+        elif answer_pos[0] == block.page:
+            y1 = answer_pos[1] - 3
+        else:
+            y1 = min(block.y0 + 120, FOOTER_Y)
+        output = image_dir / f"q{seq:03d}_opt_{key}_p{block.page + 1}.png" if image_dir else None
+        ref = _safe_crop(doc, block.page, block.y0 - 2, y1, output)
+        if ref:
+            refs[key] = ref
     return refs
 
 
-def _classify(q: ParsedQuestion) -> tuple[str, str]:
-    stem = q.stem
-    blob = stem + " " + " ".join(q.options.values())
-    if q.material_id is not None:
+def _classify(question: ParsedQuestion) -> tuple[str, str]:
+    stem = question.stem
+    blob = stem + " " + " ".join(question.options.values())
+    if question.material_id is not None:
         return "资料分析", "资料分析"
-    if len(stem) <= 45 and stem.count("：") >= 1 and q.options and all("：" in v for v in q.options.values() if v):
+    if len(stem) <= 45 and "：" in stem and question.options and all(
+        "：" in value for value in question.options.values() if value
+    ):
         return "判断推理", "类比推理"
     if "根据上述定义" in stem:
         return "判断推理", "定义判断"
-    if any(k in stem for k in ("最能削弱", "最能支持", "最能加强")):
+    if any(key in stem for key in ("最能削弱", "最能支持", "最能加强")):
         return "判断推理", "逻辑判断·加强削弱"
-    if any(k in stem for k in ("问号处", "正方体被分解", "图形", "多面体")):
+    if any(key in stem for key in ("问号处", "正方体被分解", "图形", "多面体")):
         return "判断推理", "图形推理"
-    if any(k in blob for k in ("概率", "排列", "组合", "工程", "行程", "利润", "浓度", "至少", "方程", "速度", "面积", "体积", "半径", "圆曲线", "平方米", "平均产量")):
+    if any(
+        key in blob
+        for key in (
+            "概率", "排列", "组合", "工程", "行程", "利润", "浓度", "至少",
+            "方程", "速度", "面积", "体积", "半径", "圆曲线", "平方米", "平均产量",
+        )
+    ):
         return "数量关系", "数量关系"
-    if any(k in stem for k in ("这段文字", "意在说明", "主要说明", "依次填入", "语句排序", "最恰当的一项")):
+    if any(key in stem for key in ("这段文字", "意在说明", "主要说明", "依次填入", "语句排序", "最恰当的一项")):
         return "言语理解", "言语理解"
-    if any(k in stem for k in ("以下关于", "下列关于", "下列说法", "叙述正确", "叙述错误")):
+    if any(key in stem for key in ("以下关于", "下列关于", "下列说法", "叙述正确", "叙述错误")):
         return "常识判断", "常识判断"
     return "未分类", ""
+
+
+def _detect_shared_material(
+    doc: pymupdf.Document,
+    anchors: list[tuple[int, Block]],
+    questions: list[ParsedQuestion],
+    image_dir: Path | None,
+) -> list[Material]:
+    # 粉笔资料分析套题常把一张图表/表格作为整组题的共同材料。
+    # 当前版式中材料紧邻该组第一题之前，跨页题目继续共享该材料。
+    data_questions = [q for q in questions if q.seq >= 11]
+    if len(data_questions) < 2:
+        return []
+    first = next((block for seq, block in anchors if seq == data_questions[0].seq), None)
+    if first is None:
+        return []
+    output = image_dir / f"material_01_p{first.page + 1}.png" if image_dir else None
+    ref = _safe_crop(doc, first.page, HEADER_Y, first.y0 - 5, output)
+    if not ref:
+        return []
+    material = Material(
+        id=1,
+        text="",
+        images=[ref],
+        question_seqs=[q.seq for q in data_questions],
+        after_seq=max(0, data_questions[0].seq - 1),
+    )
+    for q in data_questions:
+        q.material_id = material.id
+        q.module_guess, q.subtype_guess = "资料分析", "资料分析"
+    return [material]
 
 
 def parse(pdf_path: Path, image_dir: Path | None = None) -> ParseResult:
@@ -210,10 +297,11 @@ def parse(pdf_path: Path, image_dir: Path | None = None) -> ParseResult:
     image_dir = Path(image_dir) if image_dir else None
     if image_dir:
         image_dir.mkdir(parents=True, exist_ok=True)
-    res = ParseResult()
+
     first_text = doc[0].get_text() if doc.page_count else ""
     generated = RE_GENERATED_BY.search(first_text)
-    res.meta = {
+    result = ParseResult()
+    result.meta = {
         "source": "fenbi",
         "practice_type": "快速智能练习",
         "page_count": doc.page_count,
@@ -221,143 +309,91 @@ def parse(pdf_path: Path, image_dir: Path | None = None) -> ParseResult:
         "has_explanation": False,
         "has_per_question_time": False,
         "trusted_layout": "快速智能练习" in first_text and "粉笔" in first_text,
+        "layout_engine": "geometry-v3",
     }
 
-    elems = extract_elements(doc)
-    qnum_idx = [i for i, elem in enumerate(elems) if elem.kind == "qnum"]
-    if not qnum_idx:
-        res.warnings.append("未找到题号列，版面可能已改版")
-        return res
+    blocks = _blocks(doc)
+    anchors = _question_anchors(blocks)
+    answers = _answers(blocks)
+    if not anchors:
+        result.warnings.append("未找到题号锚点，版面可能已改版")
+        return result
 
     questions: list[ParsedQuestion] = []
-    materials: list[Material] = []
-    for k, start in enumerate(qnum_idx):
-        end = qnum_idx[k + 1] if k + 1 < len(qnum_idx) else len(elems)
-        qstart = elems[start]
-        seq = int(qstart.value)
-        chunk = elems[start + 1 : end]
-        q = ParsedQuestion(seq=seq, page_start=qstart.page)
-        stem_lines: list[str] = []
-        anchors: list[tuple[str, int, float, float]] = []
-        current_opt: str | None = None
-        answer_seen = False
-        tail_text: list[str] = []
-        images: list[Elem] = []
-        first_answer: Elem | None = None
-        last_answer: Elem | None = None
+    for idx, (seq, start) in enumerate(anchors):
+        next_pos = (
+            _pos(anchors[idx + 1][1])
+            if idx + 1 < len(anchors)
+            else (doc.page_count + 1, FOOTER_Y)
+        )
+        relevant_answers = [
+            item
+            for item in answers
+            if _pos(item[2]) > (start.page, start.y0 - 0.2) and _pos(item[2]) < next_pos
+        ]
+        correct = next((value for kind, value, _ in relevant_answers if kind == "correct"), "")
+        user = next((value for kind, value, _ in relevant_answers if kind == "user"), "")
+        answer_pos = min((_pos(block) for _, _, block in relevant_answers), default=next_pos)
 
-        for elem in chunk:
-            if elem.kind == "correct":
-                q.correct_answer = elem.value
-                answer_seen = True
-                first_answer = first_answer or elem
-                last_answer = elem
+        content_rows: list[tuple[str, Block]] = []
+        for block in blocks:
+            if _pos(block) < (start.page, start.y0 - 0.2) or _pos(block) >= answer_pos:
                 continue
-            if elem.kind == "user":
-                q.user_answer = elem.value
-                answer_seen = True
-                first_answer = first_answer or elem
-                last_answer = elem
+            if RE_CORRECT.fullmatch(block.text) or RE_USER.fullmatch(block.text):
                 continue
-            if elem.kind == "image":
-                images.append(elem)
-                continue
-            parts = _split_line_options(elem.text)
-            if parts:
-                for key, value in parts:
-                    if key not in q.options:
-                        q.options[key] = value
-                        anchors.append((key, elem.page, elem.y0, elem.x0))
-                    elif value:
-                        q.options[key] += value
-                    current_opt = key
-                continue
-            if not q.options:
-                stem_lines.append(elem.text)
-            elif not answer_seen and current_opt:
-                q.options[current_opt] += elem.text
-            else:
-                tail_text.append(elem.text)
+            text = _strip_question_number(block.text, seq)
+            if text:
+                content_rows.append((text, block))
 
-        q.stem = "".join(stem_lines).strip()
-        q.raw_text = q.stem + "\n" + "\n".join(f"{key}.{value}" for key, value in q.options.items())
-        qend = last_answer or next((elem for elem in reversed(chunk) if elem.kind != "image"), qstart)
-        next_q = elems[qnum_idx[k + 1]] if k + 1 < len(qnum_idx) else None
-        q.stem_images = _question_crops(doc, seq, qstart, qend, image_dir, next_q, first_answer)
+        stem, options, option_anchors = _split_content(content_rows)
+        question = ParsedQuestion(
+            seq=seq,
+            stem=stem,
+            options=options,
+            correct_answer=correct,
+            user_answer=user,
+            is_correct=(correct == user) if correct and user else None,
+            page_start=start.page,
+        )
+        question.stem_images = _question_images(doc, seq, start, answer_pos, image_dir)
+        question.option_images = _empty_option_images(
+            doc, seq, option_anchors, answer_pos, options, image_dir
+        )
+        question.module_guess, question.subtype_guess = _classify(question)
 
-        first_anchor = min(anchors, key=lambda item: (item[1], item[2], item[3])) if anchors else None
-        material_images: list[Elem] = []
-        for image in images:
-            if first_anchor:
-                first_page, first_y = first_anchor[1], first_anchor[2]
-                if image.page < first_page or (image.page == first_page and image.y1 <= first_y - 2):
-                    continue
-            candidates: list[tuple[int, float, float, int, str]] = []
-            for idx, (key, page_no, y0, x0) in enumerate(anchors):
-                if image.page != page_no:
-                    continue
-                iy0, iy1 = image.bbox[1], image.bbox[3]
-                overlap = iy0 - 4 <= y0 <= iy1 + 4
-                distance = min(abs(iy0 - y0), abs(((iy0 + iy1) / 2) - y0))
-                if overlap or distance <= 18:
-                    candidates.append((0 if overlap else 1, distance, abs(image.x0 - x0), idx, key))
-            if candidates:
-                candidates.sort()
-                idx = candidates[0][3]
-                key = candidates[0][4]
-                anchor = anchors[idx][1:]
-                next_anchor = anchors[idx + 1][1:] if idx + 1 < len(anchors) else None
-                q.option_images[key] = _option_row_crop(doc, seq, key, anchor, next_anchor, image_dir)
-            elif last_answer and (image.page, image.y0) > (last_answer.page, last_answer.y0):
-                material_images.append(image)
-
-        if tail_text or material_images:
-            mid = len(materials) + 1
-            payload_positions = [(elem.page, elem.y0) for elem in material_images]
-            if tail_text and last_answer:
-                payload_positions.append((last_answer.page, min(last_answer.y0 + 18, FOOTER_Y)))
-            start_pos = min(payload_positions) if payload_positions else ((last_answer.page, last_answer.y0 + 18) if last_answer else (qstart.page, qstart.y0))
-            start_pos = (start_pos[0], max(HEADER_Y, start_pos[1] - 4))
-            if next_q is not None:
-                end_pos = (next_q.page, max(HEADER_Y, next_q.y0 - 6))
-            else:
-                end_pos = (start_pos[0], FOOTER_Y)
-            materials.append(Material(id=mid, text="".join(tail_text).strip(), images=_material_crop(doc, mid, start_pos, end_pos, image_dir), after_seq=seq))
-        questions.append(q)
-
-    materials.sort(key=lambda material: material.after_seq)
-    bounds = [material.after_seq for material in materials] + [10**9]
-    for i, material in enumerate(materials):
-        lo, hi = material.after_seq, bounds[i + 1]
-        for q in questions:
-            if lo < q.seq <= hi:
-                q.material_id = material.id
-                material.question_seqs.append(q.seq)
-
-    for q in questions:
-        q.module_guess, q.subtype_guess = _classify(q)
-        complete = set(q.options) == set("ABCD") and all(q.options.get(key, "").strip() or q.option_images.get(key) for key in "ABCD")
-        q.signals = {
-            "seq_ok": q.seq > 0,
-            "options_complete": complete,
-            "correct_found": bool(q.correct_answer),
-            "user_found": bool(q.user_answer),
-            "module_identified": q.module_guess != "未分类",
-            "trusted_layout": bool(res.meta["trusted_layout"]),
+        complete_options = (
+            set(question.options) == set("ABCD")
+            and all(question.options.get(key) or question.option_images.get(key) for key in "ABCD")
+        )
+        question.confidence = 0.99 if (
+            result.meta["trusted_layout"]
+            and question.stem
+            and question.correct_answer
+            and question.user_answer
+            and complete_options
+        ) else 0.85
+        question.signals = {
+            "geometry_segmented": True,
+            "answers_bound_by_position": True,
+            "visual_fallback": bool(question.stem_images),
+            "complete_options": complete_options,
         }
-        weights = {"seq_ok": 0.10, "options_complete": 0.25, "correct_found": 0.25, "user_found": 0.20, "module_identified": 0.10, "trusted_layout": 0.10}
-        q.confidence = round(sum(weights[key] for key, value in q.signals.items() if value), 2)
-        if not q.stem:
-            q.confidence = min(q.confidence, 0.4)
-        q.is_correct = q.user_answer == q.correct_answer if q.user_answer and q.correct_answer else None
-        q.is_multi_select = len(q.correct_answer) > 1
+        question.raw_text = question.stem + "\n" + "\n".join(
+            f"{key}.{value}" for key, value in question.options.items()
+        )
+        questions.append(question)
 
-    res.questions = questions
-    res.materials = materials
-    seqs = [q.seq for q in questions]
-    if seqs != list(range(1, len(seqs) + 1)):
-        res.warnings.append(f"题号不连续: {seqs}")
-    missing = [q.seq for q in questions if not q.correct_answer or not q.user_answer]
-    if missing:
-        res.warnings.append(f"以下题缺少答案字段: {missing}")
-    return res
+    result.questions = questions
+    result.materials = _detect_shared_material(doc, anchors, questions, image_dir)
+
+    # Reclassify after shared material has been attached.
+    for question in result.questions:
+        question.module_guess, question.subtype_guess = _classify(question)
+
+    expected = list(range(result.questions[0].seq, result.questions[-1].seq + 1)) if result.questions else []
+    actual = [q.seq for q in result.questions]
+    if expected and actual != expected:
+        result.warnings.append(f"题号不连续：识别到 {actual}")
+    if any(not q.correct_answer or not q.user_answer for q in result.questions):
+        result.warnings.append("存在缺失的正确答案或用户答案，需要人工复核")
+    return result
