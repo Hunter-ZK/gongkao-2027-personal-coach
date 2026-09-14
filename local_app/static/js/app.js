@@ -1,9 +1,9 @@
 import { page, loadTimer, err, renderTimerPage, api, timerState, toggleTimer } from './runtime.js';
 import { renderDashboard, renderToday } from './pages/dashboard.js';
-import { renderTrainings, renderQuestionBank, renderImport, setReviewAnswer } from './pages/learning.js';
+import { renderTrainings, renderImport } from './pages/learning.js';
 import { renderPlan, renderProgress, renderMethods, renderSettings } from './pages/knowledge.js';
 import { renderKnowledge as renderKnowledgeWorkspace } from './pages/knowledge-v2.js';
-import { renderMistakes, renderReview } from './pages/mistakes-v2.js';
+import { renderMistakes, renderReview, setReviewAnswer } from './pages/mistakes-v2.js';
 import { renderCoachPage } from './pages/coach.js';
 import { initZenMode } from './privacy.js';
 
@@ -12,7 +12,8 @@ const menu = document.querySelector('.mobile-menu');
 
 function markActiveNavigation() {
   document.querySelectorAll('.side-nav a[data-path]').forEach((anchor) => {
-    anchor.classList.toggle('active', anchor.dataset.path === page);
+    const isQuestionsCompat = page === '/questions' && anchor.dataset.path === '/trainings';
+    anchor.classList.toggle('active', anchor.dataset.path === page || isQuestionsCompat);
   });
 }
 
@@ -43,7 +44,10 @@ async function boot() {
       case '/today': return renderToday();
       case '/timer': return renderTimerPage();
       case '/trainings': return renderTrainings();
-      case '/questions': return renderQuestionBank();
+      case '/questions': {
+        history.replaceState(null, '', '/trainings?view=bank');
+        return renderTrainings('bank');
+      }
       case '/mistakes': return renderMistakes();
       case '/review': return renderReview();
       case '/import': return renderImport();
