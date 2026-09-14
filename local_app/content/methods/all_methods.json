@@ -2,5 +2,5 @@
   "version": "2026-09-v2-source-grounded",
   "source": "行测全题型方法与技巧大全_GitHub技能融合深化版V2.docx",
   "source_method_count": 79,
-  "note": "正式方法数按V2正文统计：46个编号方法 + 33个深化方法 = 79。6条总方法论与4条复盘协议作为元方法单列，不计入正式方法数。完整正文由 all_methods.json.gz 提供。"
+  "note": "正式方法数按V2正文统计：46个编号方法 + 33个深化方法 = 79。6条总方法论与4条复盘协议作为元方法单列，不计入正式方法数。79个正式方法正文均维护在 content/methods/source/*.json；本文件只保留版本与计数元数据。"
 }
