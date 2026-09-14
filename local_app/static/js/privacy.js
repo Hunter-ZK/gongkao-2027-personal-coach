@@ -10,7 +10,7 @@ const originals=new Map();
 let active=false;
 let observer=null;
 let applying=false;
-let originalTitle=document.title;
+let originalTitle=globalThis.__lianoNormalTitle||document.title;
 
 function sanitize(text){let out=String(text??'');for(const[from,to]of replacements)out=out.split(from).join(to);return out}
 function eligible(node){const p=node.parentElement;return p&&!['SCRIPT','STYLE','TEXTAREA','INPUT','OPTION'].includes(p.tagName)&&!p.closest?.('[data-zen-ignore]')}
@@ -18,7 +18,7 @@ function applyTextNode(node){if(!active||!eligible(node))return;if(!originals.ha
 function walk(root=document.body){if(!document.createTreeWalker||!globalThis.NodeFilter)return;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=walker.nextNode()))applyTextNode(n)}
 function renderButton(){const btn=document.querySelector('.zen-toggle');if(!btn)return;btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));btn.querySelector('.zen-label')?.replaceChildren(document.createTextNode(active?'恢复视图':'禅模式'))}
 function startObserver(){if(!globalThis.MutationObserver)return;observer?.disconnect();observer=new MutationObserver(records=>{if(!active||applying)return;applying=true;try{for(const record of records){for(const node of record.addedNodes){if(node.nodeType===3)applyTextNode(node);else if(node.nodeType===1)walk(node)}}}finally{applying=false}});observer.observe(document.body,{childList:true,subtree:true})}
-function enable(){if(active)return;active=true;if(document.documentElement)document.documentElement.dataset.zen='1';document.body?.classList?.add?.('zen-mode');try{localStorage.setItem(ZEN_KEY,'1')}catch{};originalTitle=document.title;document.title='Work Notes · Workspace';walk();renderButton();startObserver()}
+function enable(){if(active)return;active=true;if(document.documentElement)document.documentElement.dataset.zen='1';document.body?.classList?.add?.('zen-mode');try{localStorage.setItem(ZEN_KEY,'1')}catch{};if(document.title!=='Work Notes · Workspace')originalTitle=document.title;document.title='Work Notes · Workspace';walk();renderButton();startObserver()}
 function disable(){if(!active)return;active=false;observer?.disconnect();observer=null;for(const[node,text]of originals){if(node.isConnected)node.nodeValue=text}originals.clear();document.body?.classList?.remove?.('zen-mode');if(document.documentElement)delete document.documentElement.dataset.zen;try{localStorage.removeItem(ZEN_KEY)}catch{};document.title=originalTitle;renderButton()}
 export function toggleZenMode(){active?disable():enable()}
 export function initZenMode(){document.querySelector('.zen-toggle')?.addEventListener('click',toggleZenMode);document.addEventListener('keydown',e=>{if(e.altKey&&e.key.toLowerCase()==='z'){e.preventDefault();toggleZenMode()}});let saved=false;try{saved=localStorage.getItem(ZEN_KEY)==='1'}catch{};if(saved)enable();else{if(document.documentElement)delete document.documentElement.dataset.zen;renderButton()}}
