@@ -1,0 +1,285 @@
+/* Direct layout port of Civil_gemini2 MethodsView for the real 79-method catalog. */
+.method-tabs {
+  margin-bottom:16px;
+}
+
+.method-source-note,
+.method-filter-bar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 16px;
+  border:1px solid #e7e5e4;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.025);
+}
+
+.method-source-note {
+  margin-bottom:12px;
+}
+
+.method-source-note strong {
+  display:block;
+  color:#1c1917;
+  font-size:12px;
+}
+
+.method-source-note p {
+  margin:4px 0 0;
+  color:#78716c;
+  font-size:10.5px;
+  line-height:1.6;
+}
+
+.method-filter-bar {
+  margin-bottom:14px;
+  padding:12px;
+}
+
+.method-search-wrap {
+  flex:1;
+  min-width:220px;
+}
+
+.method-search-input {
+  width:100%;
+  min-height:36px;
+  padding:0 11px;
+}
+
+.method-filter-bar select {
+  min-height:36px;
+  padding:0 10px;
+}
+
+.method-accordion-list {
+  display:grid;
+  gap:10px;
+}
+
+.method-accordion-card {
+  overflow:hidden;
+  border:1px solid #e7e5e4;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.025);
+}
+
+.method-accordion-card.expanded {
+  border-color:#d6d3d1;
+}
+
+.method-accordion-head {
+  width:100%;
+  min-height:70px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:15px 17px;
+  border:0;
+  background:#fff;
+  text-align:left;
+  cursor:pointer;
+}
+
+.method-accordion-head:hover {
+  background:#fafaf9;
+}
+
+.method-accordion-title {
+  min-width:0;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+
+.method-accordion-meta {
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.method-id-badge,
+.method-module-badge {
+  padding:3px 7px;
+  border-radius:6px;
+  font-size:9.5px;
+  line-height:1.2;
+}
+
+.method-id-badge {
+  background:#1c1917;
+  color:#fff;
+  font-family:var(--font-num);
+  font-weight:800;
+}
+
+.method-module-badge {
+  background:#f5f5f4;
+  color:#57534e;
+  font-weight:650;
+}
+
+.method-accordion-title h3 {
+  flex:1 1 260px;
+  min-width:0;
+  margin:0;
+  color:#1c1917;
+  font-size:13px;
+  font-weight:700;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.method-accordion-side {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  flex:0 0 auto;
+}
+
+.method-call-pill {
+  max-width:260px;
+  overflow:hidden;
+  padding:4px 8px;
+  border:1px solid #fde68a;
+  border-radius:9999px;
+  background:#fffbeb;
+  color:#92400e;
+  font-family:var(--font-num);
+  font-size:8.5px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.method-chevron {
+  width:24px;
+  height:24px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:#f5f5f4;
+  color:#78716c;
+  font-family:var(--font-num);
+  font-size:15px;
+}
+
+.method-accordion-body {
+  display:grid;
+  gap:12px;
+  padding:14px 17px 17px;
+  border-top:1px solid #f5f5f4;
+  background:rgba(250,250,249,.45);
+}
+
+.method-definition-grid,
+.method-example-boundary-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+.method-accordion-block {
+  padding:12px 13px;
+  border:1px solid #e7e5e4;
+  border-radius:10px;
+  background:#fff;
+}
+
+.method-accordion-block > strong {
+  display:block;
+  margin-bottom:5px;
+  color:#1c1917;
+  font-size:10px;
+}
+
+.method-accordion-block p,
+.method-accordion-block li {
+  margin:0;
+  color:#57534e;
+  font-size:10.5px;
+  line-height:1.7;
+}
+
+.method-accordion-block.example {
+  border-color:#a7f3d0;
+  background:rgba(236,253,245,.6);
+}
+
+.method-accordion-block.boundary {
+  border-color:#fecdd3;
+  background:rgba(255,241,242,.72);
+}
+
+.method-accordion-block.signals {
+  padding:0;
+  border:0;
+  background:transparent;
+}
+
+.method-signal-list {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.method-signal-list span {
+  padding:5px 8px;
+  border:1px solid #fde68a;
+  border-radius:8px;
+  background:#fffbeb;
+  color:#92400e;
+  font-size:9.5px;
+}
+
+.method-execution-list {
+  margin:0;
+  padding-left:18px;
+}
+
+.method-execution-list li + li {
+  margin-top:5px;
+}
+
+.method-accordion-foot {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding-top:8px;
+  border-top:1px solid #e7e5e4;
+  color:#78716c;
+  font-size:9px;
+}
+
+.method-accordion-foot a {
+  color:#44403c;
+  font-weight:650;
+  text-decoration:none;
+}
+
+.method-accordion-foot a:hover {
+  text-decoration:underline;
+}
+
+@media (max-width:760px) {
+  .method-source-note,
+  .method-filter-bar {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .method-definition-grid,
+  .method-example-boundary-grid {
+    grid-template-columns:1fr;
+  }
+
+  .method-call-pill {
+    display:none;
+  }
+}

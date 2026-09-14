@@ -18,6 +18,7 @@ def test_zen_mode_remains_a_first_class_visible_control():
     assert "const ZEN_KEY = 'liano.zen'" in privacy
     assert "['资料分析', '数据分析']" in privacy
     assert "['阿里木江', '来源C']" in privacy
+    assert '<div id="global-focus-root"></div>' in template
 
 
 def test_deepseek_coach_is_global_and_not_hidden_behind_an_experimental_flag():
@@ -73,15 +74,25 @@ def test_knowledge_page_uses_authoritative_method_mapping_not_fuzzy_guessing():
     assert "textBlock('完整例题'" in knowledge
 
 
-def test_civil_gemini2_visual_baseline_is_loaded_last():
+def test_civil_gemini2_visual_baseline_and_views_are_loaded():
     app_css = read('static/css/app.css')
     visual = read('static/css/civil_gemini_exact.css')
     views = read('static/css/civil_gemini_views.css')
+    methods_css = read('static/css/civil_gemini_methods.css')
+    training_css = read('static/css/civil_gemini_training.css')
+    methods_js = read('static/js/pages/methods.js')
+    training_js = read('static/js/pages/training.js')
     assert "@import url('./civil_gemini_exact.css');" in app_css
-    assert app_css.strip().endswith("@import url('./civil_gemini_views.css');")
+    assert "@import url('./civil_gemini_views.css');" in app_css
+    assert "@import url('./civil_gemini_methods.css');" in app_css
+    assert app_css.strip().endswith("@import url('./civil_gemini_training.css');")
     assert '--sidebar-w:256px' in visual
     assert 'global-coach-drawer' in visual
     assert 'focus-popover' in visual
     assert 'linear-gradient(90deg,#1c1917' in visual
     assert 'today-stat-grid' in views
     assert 'coach-layout' in views
+    assert 'method-accordion-card' in methods_css
+    assert 'method-accordion-card' in methods_js
+    assert 'training-batch-card' in training_css
+    assert 'training-batch-card' in training_js

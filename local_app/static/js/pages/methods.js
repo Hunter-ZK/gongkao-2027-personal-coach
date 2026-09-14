@@ -1,76 +1,110 @@
 import { api, main, clear, h, tag, title, panel, tableWrap } from '../runtime.js';
 
-let activeMethodId = null;
+function methodBlock(label, body, cls = '') {
+  if (!body) return null;
+  return h('section', { class: `method-accordion-block ${cls}`.trim() },
+    h('strong', {}, label),
+    typeof body === 'string' ? h('p', {}, body) : body,
+  );
+}
 
-function methodDetail(method) {
-  if (!method) return h('div', { class: 'study-empty-state' }, h('strong', {}, '选择一个正式方法'));
-  return h('article', { class: 'method-detail formal-method-detail' },
-    h('header', { class: 'method-detail-head' },
-      h('div', { class: 'method-detail-meta' }, tag(method.id), tag(method.module), method.node_slug ? tag('已映射知识节点', 'correct') : tag('待映射', 'pending')),
-      h('h2', {}, method.title),
-      method.definition ? h('p', { class: 'method-detail-lead' }, method.definition) : null,
-      method.node_slug ? h('a', { class: 'secondary', href: `/knowledge#method-${method.id}` }, '进入知识体系学习') : null,
+function methodCard(method, expanded, onToggle) {
+  const signals = method.signals || [];
+  const steps = method.steps || [];
+  return h('article', { class: `method-accordion-card ${expanded ? 'expanded' : ''}` },
+    h('button', { class: 'method-accordion-head', type: 'button', onclick: onToggle },
+      h('div', { class: 'method-accordion-title' },
+        h('div', { class: 'method-accordion-meta' },
+          h('span', { class: 'method-id-badge' }, method.id),
+          h('span', { class: 'method-module-badge' }, method.module || '综合'),
+        ),
+        h('h3', {}, method.title),
+      ),
+      h('div', { class: 'method-accordion-side' },
+        method.exam_command ? h('span', { class: 'method-call-pill' }, method.exam_command) : null,
+        h('span', { class: 'method-chevron', 'aria-hidden': 'true' }, expanded ? '−' : '+'),
+      ),
     ),
-    method.signals?.length ? h('section', { class: 'method-detail-block signals' }, h('h3', {}, '识别信号'), h('ul', {}, ...method.signals.map((x) => h('li', {}, x)))) : null,
-    method.principle ? h('section', { class: 'method-detail-block' }, h('h3', {}, '底层原理'), h('p', {}, method.principle)) : null,
-    method.steps?.length ? h('section', { class: 'method-detail-block' }, h('h3', {}, '标准操作'), h('ol', { class: 'method-step-list' }, ...method.steps.map((x) => h('li', {}, x)))) : null,
-    method.example ? h('section', { class: 'method-detail-block example' }, h('h3', {}, '完整例题'), h('p', {}, method.example)) : null,
-    method.boundary ? h('section', { class: 'method-detail-block boundary' }, h('h3', {}, '易错点 / 失效边界'), h('p', {}, method.boundary)) : null,
-    method.comparison ? h('section', { class: 'method-detail-block' }, h('h3', {}, '相邻方法如何选择'), h('p', {}, method.comparison)) : null,
-    method.exam_command ? h('section', { class: 'method-detail-block command' }, h('h3', {}, '考场调用指令'), h('p', {}, method.exam_command)) : null,
-    h('section', { class: 'method-source-card' }, h('strong', {}, '来源与证据'), h('p', {}, method.evidence || method.source_note || '来源见 V2 正文')),
+    expanded ? h('div', { class: 'method-accordion-body' },
+      h('div', { class: 'method-definition-grid' },
+        methodBlock('方法定义', method.definition, 'definition'),
+        methodBlock('核心破题机理', method.principle, 'principle'),
+      ),
+      signals.length ? methodBlock('考场触发特征', h('div', { class: 'method-signal-list' }, ...signals.map((x) => h('span', {}, x))), 'signals') : null,
+      steps.length ? methodBlock('操作步骤与执行路径', h('ol', { class: 'method-execution-list' }, ...steps.map((x) => h('li', {}, x))), 'steps') : null,
+      h('div', { class: 'method-example-boundary-grid' },
+        methodBlock('实战例证', method.example, 'example'),
+        methodBlock('适用边界与避坑', method.boundary, 'boundary'),
+      ),
+      method.comparison ? methodBlock('相邻方法如何选择', method.comparison, 'comparison') : null,
+      h('div', { class: 'method-accordion-foot' },
+        h('span', {}, method.evidence || method.source_note || '来源见 V2 正文'),
+        method.node_slug ? h('a', { href: `/knowledge#method-${method.id}` }, '进入对应知识点') : h('span', {}, '暂未映射知识节点'),
+      ),
+    ) : null,
   );
 }
 
 async function renderFormalMethods(host) {
   const methods = await api('/api/knowledge/methods');
-  const modules = ['资料分析', '判断推理', '言语理解', '数量关系', '常识判断'];
-  const query = h('input', { class: 'study-search-input', placeholder: '搜索方法、识别信号、原理或考场指令' });
-  const moduleSelect = h('select', { class: 'study-filter-select' }, h('option', { value: '' }, '全部模块'), ...modules.map((name) => h('option', { value: name }, name)));
-  const count = h('span', { class: 'study-result-count' }, `${methods.length} 个正式方法`);
-  const list = h('div', { class: 'method-list' });
-  const detail = h('div', { class: 'panel method-detail-host' });
+  const modules = [...new Set(methods.map((x) => x.module).filter(Boolean))];
+  let expandedId = methods[0]?.id || null;
+  const search = h('input', { class: 'study-search-input method-search-input', placeholder: '搜索方法名称、识别特征、核心口诀或关键词…' });
+  const moduleSelect = h('select', { class: 'study-filter-select' },
+    h('option', { value: '' }, `全部模块 (${methods.length})`),
+    ...modules.map((name) => h('option', { value: name }, name)),
+  );
+  const count = h('span', { class: 'study-result-count' }, `${methods.length} 种`);
+  const list = h('div', { class: 'method-accordion-list' });
 
-  const drawDetail = (id) => {
-    activeMethodId = id;
-    const selected = methods.find((method) => method.id === id) || methods[0];
-    clear(detail).append(methodDetail(selected));
-    list.querySelectorAll('.method-list-item').forEach((node) => node.classList.toggle('active', node.dataset.id === selected?.id));
-  };
-  const drawList = () => {
-    const needle = query.value.trim().toLowerCase();
+  const draw = () => {
+    const needle = search.value.trim().toLowerCase();
     const filtered = methods.filter((method) => {
       if (moduleSelect.value && method.module !== moduleSelect.value) return false;
       if (!needle) return true;
-      const hay = [method.id, method.title, method.definition, method.principle, method.exam_command, ...(method.signals || []), ...(method.steps || [])].filter(Boolean).join(' ').toLowerCase();
+      const hay = [
+        method.id,
+        method.title,
+        method.definition,
+        method.principle,
+        method.exam_command,
+        method.boundary,
+        ...(method.signals || []),
+        ...(method.steps || []),
+      ].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(needle);
     });
-    count.textContent = `${filtered.length} 个正式方法`;
+    count.textContent = `${filtered.length} 种`;
     clear(list);
-    filtered.forEach((method) => list.append(h('button', {
-      class: `method-list-item ${method.id === activeMethodId ? 'active' : ''}`,
-      'data-id': method.id,
-      onclick: () => drawDetail(method.id),
-    },
-      h('span', { class: 'method-list-id' }, method.id),
-      h('span', { class: 'method-list-copy' }, h('strong', {}, method.title), h('small', {}, `${method.module} · ${method.node_slug ? '已进入知识节点' : '待映射'}`)),
-    )));
-    if (!filtered.length) clear(detail).append(h('div', { class: 'study-empty-state compact' }, h('strong', {}, '没有匹配方法')));
-    else if (!filtered.some((method) => method.id === activeMethodId)) drawDetail(filtered[0].id);
+    if (!filtered.length) {
+      list.append(h('div', { class: 'empty' }, '暂无匹配的方法。'));
+      return;
+    }
+    if (!filtered.some((m) => m.id === expandedId)) expandedId = filtered[0].id;
+    filtered.forEach((method) => list.append(methodCard(method, method.id === expandedId, () => {
+      expandedId = expandedId === method.id ? null : method.id;
+      draw();
+    })));
   };
-  query.oninput = drawList;
-  moduleSelect.onchange = drawList;
+
+  search.oninput = draw;
+  moduleSelect.onchange = draw;
   host.append(
-    h('div', { class: 'method-library-intro' },
-      h('strong', {}, 'V2 正式方法库'),
-      h('p', {}, '79 个正式方法单元来自“六位老师公开方法系统整理 + GitHub Skill 融合深化 V2”。这里保留完整方法正文；知识体系按固定映射把它们组织到 30 个节点。'),
-      h('a', { class: 'secondary', href: '/coach' }, '用 DeepSeek 即时提问'),
+    h('div', { class: 'method-source-note' },
+      h('div', {},
+        h('strong', {}, 'V2 正式方法正文'),
+        h('p', {}, '79 个正式方法按原始方法单元完整展示，保留识别信号、原理、步骤、例题、边界和考场调用指令。'),
+      ),
+      h('button', { class: 'secondary', type: 'button', onclick: () => window.openGlobalCoach?.('请根据我当前打开的方法，帮我判断识别信号、执行步骤和失效边界。') }, '问 AI 教练'),
     ),
-    h('div', { class: 'method-toolbar' }, h('div', { class: 'method-search-wrap' }, query), moduleSelect, count),
-    h('div', { class: 'method-library-shell' }, list, detail),
+    h('div', { class: 'method-filter-bar' },
+      h('div', { class: 'method-search-wrap' }, search),
+      moduleSelect,
+      count,
+    ),
+    list,
   );
-  activeMethodId = methods[0]?.id || null;
-  drawList();
+  draw();
 }
 
 async function renderPersonalMethods(host) {
@@ -94,12 +128,10 @@ async function renderPersonalMethods(host) {
 
 export async function renderMethods() {
   clear(main).append(title(
-    '方法库与结论',
-    '正式 V2 方法和你的个人训练结论分开保存：前者是教材底稿，后者是经过你自己验证后沉淀的规则。',
-    '',
-    [h('a', { class: 'primary', href: '/coach' }, '打开 AI 方法教练')],
+    '79 项考场实战核心方法库',
+    '正式 V2 方法与个人训练结论分开保存。正式方法直接按 Gemini 版本的方法卡片布局展开，但内容仍读取当前平台的 79 个真实方法单元。',
   ));
-  const tabs = h('div', { class: 'workspace-tabs' });
+  const tabs = h('div', { class: 'workspace-tabs method-tabs' });
   const host = h('section', { class: 'workspace-tab-body' });
   let tab = 'formal';
   const draw = async () => {
