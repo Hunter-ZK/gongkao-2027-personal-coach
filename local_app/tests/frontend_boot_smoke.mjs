@@ -9,8 +9,8 @@ class Element {
     this.tagName = tag.toUpperCase(); this.nodeType = 1; this.children = []; this.attrs = {}; this.dataset = {};
     this.classList = new ClassList(); this.className = ''; this.textContent = ''; this.innerHTML = ''; this.value = ''; this.files = [];
   }
-  append(...xs) { this.children.push(...xs); }
-  replaceChildren(...xs) { this.children = [...xs]; }
+  append(...xs) { this.children.push(...xs.filter((x) => x != null)); }
+  replaceChildren(...xs) { this.children = [...xs.filter((x) => x != null)]; }
   setAttribute(k, v) { this.attrs[k] = String(v); if (k === 'class') this.className = String(v); if (k.startsWith('data-')) this.dataset[k.slice(5)] = String(v); if (k === 'value') this.value = String(v); }
   addEventListener() {}
   querySelectorAll() { return []; }
@@ -53,13 +53,15 @@ globalThis.fetch = async (url) => {
   if (u.includes('/api/timer/state')) data = { id: 1, status: 'idle', elapsed_sec: 0, paused_sec: 0, paused_sec_live: 0 };
   else if (u.includes('/api/dashboard')) data = dashboard;
   else if (u.includes('/api/tasks')) data = [];
+  else if (u.includes('/api/knowledge/tree')) data = [];
   return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
 };
 
 await import('../static/js/app.js');
 await new Promise((resolve) => setTimeout(resolve, 100));
 if (!main.children.length) throw new Error('app boot did not replace loading shell');
-if (main.children[0]?.className !== 'hero') throw new Error(`unexpected first dashboard node: ${main.children[0]?.className}`);
+if (main.children[0]?.className !== 'page-head') throw new Error(`unexpected first dashboard node: ${main.children[0]?.className}`);
+if (main.children.length < 2) throw new Error('dashboard did not render content after page heading');
 
 const { sanitizeZenText } = await import('../static/js/privacy.js');
 const sample = sanitizeZenText('2027 公考私教 · 广东省考 · 国考 · 公务员考试 · 行测 · 申论 · 粉笔真题 · 错题复训');
