@@ -5,6 +5,7 @@ __pycache__/
 data/study.db
 data/study.db-shm
 data/study.db-wal
+data/secrets.json
 data/images/*
 !data/images/.gitkeep
 exports/*
