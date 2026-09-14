@@ -143,11 +143,13 @@ def _safe_crop(doc: pymupdf.Document, page_no: int, rect: tuple, out: Path | Non
     return str(out)
 
 
-def _question_crops(doc: pymupdf.Document, seq: int, qstart: Elem, qend: Elem, image_dir: Path | None, next_q: Elem | None) -> list[str]:
+def _question_crops(doc: pymupdf.Document, seq: int, qstart: Elem, qend: Elem, image_dir: Path | None, next_q: Elem | None, answer_start: Elem | None) -> list[str]:
     refs: list[str] = []
     for pno in range(qstart.page, qend.page + 1):
         y0 = max(HEADER_Y, qstart.y0 - 6) if pno == qstart.page else HEADER_Y
         y1 = min(FOOTER_Y, qend.y0 + 22) if pno == qend.page else FOOTER_Y
+        if answer_start is not None and answer_start.page == pno:
+            y1 = min(y1, max(y0 + 8, answer_start.y0 - 3))
         if next_q is not None and next_q.page == pno:
             y1 = min(y1, max(y0 + 8, next_q.y0 - 4))
         if y1 - y0 < 8:
@@ -241,17 +243,20 @@ def parse(pdf_path: Path, image_dir: Path | None = None) -> ParseResult:
         answer_seen = False
         tail_text: list[str] = []
         images: list[Elem] = []
+        first_answer: Elem | None = None
         last_answer: Elem | None = None
 
         for elem in chunk:
             if elem.kind == "correct":
                 q.correct_answer = elem.value
                 answer_seen = True
+                first_answer = first_answer or elem
                 last_answer = elem
                 continue
             if elem.kind == "user":
                 q.user_answer = elem.value
                 answer_seen = True
+                first_answer = first_answer or elem
                 last_answer = elem
                 continue
             if elem.kind == "image":
@@ -278,7 +283,7 @@ def parse(pdf_path: Path, image_dir: Path | None = None) -> ParseResult:
         q.raw_text = q.stem + "\n" + "\n".join(f"{key}.{value}" for key, value in q.options.items())
         qend = last_answer or next((elem for elem in reversed(chunk) if elem.kind != "image"), qstart)
         next_q = elems[qnum_idx[k + 1]] if k + 1 < len(qnum_idx) else None
-        q.stem_images = _question_crops(doc, seq, qstart, qend, image_dir, next_q)
+        q.stem_images = _question_crops(doc, seq, qstart, qend, image_dir, next_q, first_answer)
 
         first_anchor = min(anchors, key=lambda item: (item[1], item[2], item[3])) if anchors else None
         material_images: list[Elem] = []
