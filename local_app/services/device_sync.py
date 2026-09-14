@@ -14,11 +14,16 @@ from typing import Any
 from db import DB_PATH, DATA, migrate
 
 BASE = Path(__file__).resolve().parents[1]
-REPO_ROOT = BASE.parent
-SYNC_DIR = REPO_ROOT / os.environ.get("GONGKAO_SYNC_DIR", "sync_data")
-SNAPSHOT_DB = SYNC_DIR / "study.db"
-SNAPSHOT_IMAGES = SYNC_DIR / "images"
-MANIFEST = SYNC_DIR / "manifest.json"
+SYNC_REMOTE_URL = os.environ.get(
+    "GONGKAO_SYNC_REMOTE",
+    "https://github.com/Hunter-ZK/Civil_gemini2.git",
+)
+SYNC_BRANCH = os.environ.get("GONGKAO_SYNC_BRANCH", "gongkao-personal-data")
+SYNC_REPO = DATA / "sync-repo"
+CHECKPOINT_DIR = SYNC_REPO / "gongkao_sync" / "checkpoint"
+SNAPSHOT_DB = CHECKPOINT_DIR / "study.db"
+SNAPSHOT_IMAGES = CHECKPOINT_DIR / "images"
+MANIFEST = CHECKPOINT_DIR / "manifest.json"
 LOCAL_STATE = DATA / "sync-state.json"
 BACKUPS = DATA / "backups"
 
@@ -31,11 +36,11 @@ class SyncConflict(SyncError):
     pass
 
 
-def _run(*args: str, check: bool = True, timeout: int = 120) -> str:
+def _git(cwd: Path, *args: str, check: bool = True, timeout: int = 120) -> str:
     try:
         result = subprocess.run(
             ["git", *args],
-            cwd=REPO_ROOT,
+            cwd=cwd,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -43,18 +48,39 @@ def _run(*args: str, check: bool = True, timeout: int = 120) -> str:
             check=False,
         )
     except FileNotFoundError as exc:
-        raise SyncError("未找到 Git。请先安装 Git，并使用 git clone 获取本项目。") from exc
+        raise SyncError("未找到 Git。请先安装 Git 后再使用双设备同步。") from exc
     except subprocess.TimeoutExpired as exc:
         raise SyncError("Git 同步超时，请检查网络后重试。") from exc
     if check and result.returncode != 0:
         detail = (result.stderr or result.stdout or "Git 命令执行失败").strip()
+        if "Authentication failed" in detail or "could not read Username" in detail or "Repository not found" in detail:
+            raise SyncError(
+                "无法访问私有同步仓库。请先在本机 Git 登录你的 GitHub 账号（能访问 Hunter-ZK/Civil_gemini2），再重试。"
+            )
         raise SyncError(detail[:1000])
     return result.stdout.strip()
 
 
-def _ensure_repo() -> None:
-    if not (REPO_ROOT / ".git").exists():
-        raise SyncError("当前目录不是 Git 克隆仓库，无法使用双设备同步。请通过 git clone 获取项目后再使用。")
+def _ensure_sync_repo(*, fetch: bool = False) -> None:
+    git_dir = SYNC_REPO / ".git"
+    if not git_dir.exists():
+        if SYNC_REPO.exists():
+            shutil.rmtree(SYNC_REPO, ignore_errors=True)
+        SYNC_REPO.parent.mkdir(parents=True, exist_ok=True)
+        _git(
+            SYNC_REPO.parent,
+            "clone",
+            "--branch",
+            SYNC_BRANCH,
+            "--single-branch",
+            SYNC_REMOTE_URL,
+            str(SYNC_REPO),
+            timeout=120,
+        )
+        _git(SYNC_REPO, "config", "user.name", "Gongkao Workbench")
+        _git(SYNC_REPO, "config", "user.email", "gongkao-workbench@users.noreply.github.com")
+    if fetch:
+        _git(SYNC_REPO, "fetch", "origin", SYNC_BRANCH, "--quiet", timeout=60)
 
 
 def _sha256(path: Path) -> str | None:
@@ -85,15 +111,14 @@ def _local_state() -> dict[str, Any]:
     return _read_json(LOCAL_STATE, {})
 
 
-def _upstream() -> str | None:
-    value = _run("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}", check=False)
-    return value or None
+def _remote_ref() -> str:
+    return f"origin/{SYNC_BRANCH}"
 
 
 def _ahead_behind() -> tuple[int, int]:
-    if not _upstream():
+    if not (SYNC_REPO / ".git").exists():
         return 0, 0
-    raw = _run("rev-list", "--left-right", "--count", "HEAD...@{u}", check=False)
+    raw = _git(SYNC_REPO, "rev-list", "--left-right", "--count", f"HEAD...{_remote_ref()}", check=False)
     try:
         ahead, behind = raw.split()
         return int(ahead), int(behind)
@@ -102,11 +127,10 @@ def _ahead_behind() -> tuple[int, int]:
 
 
 def _remote_manifest() -> dict[str, Any] | None:
-    upstream = _upstream()
-    if not upstream:
+    if not (SYNC_REPO / ".git").exists():
         return None
-    rel = MANIFEST.relative_to(REPO_ROOT).as_posix()
-    raw = _run("show", f"{upstream}:{rel}", check=False)
+    rel = MANIFEST.relative_to(SYNC_REPO).as_posix()
+    raw = _git(SYNC_REPO, "show", f"{_remote_ref()}:{rel}", check=False)
     if not raw:
         return None
     try:
@@ -137,8 +161,11 @@ def _backup_sqlite(source: Path, target: Path) -> None:
     tmp.replace(target)
 
 
-def _copy_images(source: Path, target: Path) -> None:
+def _replace_images(source: Path, target: Path) -> None:
+    if target.exists():
+        shutil.rmtree(target, ignore_errors=True)
     if not source.exists():
+        target.mkdir(parents=True, exist_ok=True)
         return
     target.mkdir(parents=True, exist_ok=True)
     for item in source.rglob("*"):
@@ -150,110 +177,111 @@ def _copy_images(source: Path, target: Path) -> None:
 
 
 def _current_db_dirty() -> bool:
+    current = _sha256(DB_PATH)
+    if current is None:
+        return False
     state = _local_state()
     known = state.get("db_sha256")
-    current = _sha256(DB_PATH)
-    return bool(known and current and known != current)
+    return known != current
 
 
 def status(*, refresh_remote: bool = False) -> dict[str, Any]:
+    state = _local_state()
+    initialized = (SYNC_REPO / ".git").exists()
     try:
-        _ensure_repo()
         if refresh_remote:
-            _run("fetch", "--quiet", check=False, timeout=60)
-        branch = _run("branch", "--show-current", check=False) or "detached"
-        upstream = _upstream()
-        ahead, behind = _ahead_behind()
-        local_manifest = _read_json(MANIFEST, {}) if MANIFEST.exists() else None
-        remote_manifest = _remote_manifest()
-        state = _local_state()
+            _ensure_sync_repo(fetch=True)
+            initialized = True
+        remote_manifest = _remote_manifest() if initialized else None
+        ahead, behind = _ahead_behind() if initialized else (0, 0)
         return {
             "available": True,
-            "branch": branch,
-            "upstream": upstream,
-            "origin": _run("remote", "get-url", "origin", check=False) or None,
+            "configured": True,
+            "initialized": initialized,
+            "branch": SYNC_BRANCH,
+            "origin": SYNC_REMOTE_URL,
+            "private_backing": "Hunter-ZK/Civil_gemini2",
             "ahead": ahead,
             "behind": behind,
             "local_dirty": _current_db_dirty(),
             "last_sync_revision": state.get("revision"),
             "last_sync_at": state.get("synced_at"),
-            "checkpoint_revision": (local_manifest or {}).get("revision"),
+            "checkpoint_revision": (_read_json(MANIFEST, {}) or {}).get("revision") if initialized else None,
             "remote_revision": (remote_manifest or {}).get("revision"),
             "remote_device": (remote_manifest or {}).get("device"),
             "remote_created_at": (remote_manifest or {}).get("created_at"),
-            "snapshot_exists": SNAPSHOT_DB.exists(),
-            "note": "同步只上传学习数据库与题目图片；DeepSeek API Key、密钥配置和本机临时文件不会进入同步快照。",
+            "snapshot_exists": SNAPSHOT_DB.exists() if initialized else False,
+            "note": "个人学习快照写入私有 Civil_gemini2 的 gongkao-personal-data 分支；公开公考代码仓库不会保存 SQLite、题目图片、API Key 或密钥配置。",
         }
     except SyncError as exc:
-        return {"available": False, "error": str(exc)}
+        return {
+            "available": False,
+            "configured": True,
+            "initialized": initialized,
+            "branch": SYNC_BRANCH,
+            "origin": SYNC_REMOTE_URL,
+            "error": str(exc),
+        }
 
 
 def push_checkpoint() -> dict[str, Any]:
-    _ensure_repo()
-    _run("fetch", "--quiet", check=False, timeout=60)
-    upstream = _upstream()
-    _, behind = _ahead_behind()
-    if upstream and behind > 0:
-        raise SyncConflict(f"云端已有 {behind} 个新提交。请先点击“拉取云端”再提交本机进度。")
     if not DB_PATH.exists():
         raise SyncError("本机学习数据库尚不存在，暂无可同步数据。")
+    _ensure_sync_repo(fetch=True)
+    _, behind = _ahead_behind()
+    if behind > 0:
+        raise SyncConflict(f"私有云端已有 {behind} 个新提交。请先点击“拉取云端”再提交本机进度。")
 
-    SYNC_DIR.mkdir(parents=True, exist_ok=True)
+    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
     _backup_sqlite(DB_PATH, SNAPSHOT_DB)
-    _copy_images(DATA / "images", SNAPSHOT_IMAGES)
+    _replace_images(DATA / "images", SNAPSHOT_IMAGES)
     now = datetime.now(timezone.utc).astimezone()
-    db_sha = _sha256(SNAPSHOT_DB)
     revision = now.strftime("%Y%m%dT%H%M%S%z")
     manifest = {
-        "format": 1,
+        "format": 2,
         "revision": revision,
         "created_at": now.isoformat(timespec="seconds"),
         "device": socket.gethostname(),
-        "db_sha256": db_sha,
+        "db_sha256": _sha256(SNAPSHOT_DB),
         "image_count": _image_count(SNAPSHOT_IMAGES),
+        "privacy": "private GitHub backing branch",
         "policy": "personal study checkpoint; excludes API keys and secret config",
     }
     _write_json(MANIFEST, manifest)
 
-    rel = SYNC_DIR.relative_to(REPO_ROOT).as_posix()
-    _run("add", "--", rel)
+    rel = CHECKPOINT_DIR.relative_to(SYNC_REPO).as_posix()
+    _git(SYNC_REPO, "add", "--", rel)
     changed = subprocess.run(
         ["git", "diff", "--cached", "--quiet", "--", rel],
-        cwd=REPO_ROOT,
+        cwd=SYNC_REPO,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
     ).returncode != 0
     if changed:
-        _run("commit", "-m", f"sync(workbench): checkpoint {revision}")
-    if upstream:
-        _run("push", timeout=120)
-    else:
-        branch = _run("branch", "--show-current")
-        _run("push", "-u", "origin", branch, timeout=120)
+        _git(SYNC_REPO, "commit", "-m", f"sync(workbench): checkpoint {revision}")
+        _git(SYNC_REPO, "push", "origin", f"HEAD:{SYNC_BRANCH}", timeout=120)
 
-    current_sha = _sha256(DB_PATH)
     _write_json(LOCAL_STATE, {
         "revision": revision,
         "synced_at": now.isoformat(timespec="seconds"),
-        "db_sha256": current_sha,
+        "db_sha256": _sha256(DB_PATH),
         "device": socket.gethostname(),
     })
-    return {"ok": True, "action": "push", "revision": revision, "status": status(refresh_remote=False)}
+    return {"ok": True, "action": "push", "revision": revision, "status": status(refresh_remote=True)}
 
 
 def pull_checkpoint(*, force: bool = False) -> dict[str, Any]:
-    _ensure_repo()
-    _run("fetch", "--quiet", timeout=60)
+    _ensure_sync_repo(fetch=True)
     remote = _remote_manifest()
     if not remote:
-        raise SyncError("云端还没有工作台数据快照。请先在另一台设备点击“提交同步”。")
+        raise SyncError("私有云端还没有工作台数据快照。请先在另一台设备点击“提交本机进度”。")
 
     state = _local_state()
     remote_revision = remote.get("revision")
     has_unsynced_local = _current_db_dirty()
     if has_unsynced_local and remote_revision != state.get("revision") and not force:
-        raise SyncConflict("本机有未提交学习数据，同时云端也有新版本。为避免覆盖，请先提交本机进度；如确定丢弃本机变更，可使用强制拉取。")
+        raise SyncConflict("本机有未提交学习数据，同时私有云端也有新版本。为避免覆盖，请先提交本机进度；如确定丢弃本机变更，可使用强制拉取。")
 
     BACKUPS.mkdir(parents=True, exist_ok=True)
     backup = None
@@ -262,10 +290,16 @@ def pull_checkpoint(*, force: bool = False) -> dict[str, Any]:
         backup = BACKUPS / f"study-before-sync-{stamp}.db"
         _backup_sqlite(DB_PATH, backup)
 
-    head_before = _run("rev-parse", "HEAD", check=False)
-    _run("pull", "--rebase", "--autostash", timeout=120)
+    ahead, behind = _ahead_behind()
+    if ahead and behind:
+        raise SyncConflict("同步缓存分支出现分叉，系统已停止自动覆盖。请先保留本机备份并检查两台设备的同步顺序。")
+    if behind:
+        _git(SYNC_REPO, "pull", "--ff-only", "origin", SYNC_BRANCH, timeout=120)
+    elif ahead:
+        raise SyncConflict("本机存在尚未推送的同步提交。请先点击“提交本机进度”，不要直接拉取覆盖。")
+
     if not SNAPSHOT_DB.exists():
-        raise SyncError("已拉取仓库，但同步快照缺少 study.db。")
+        raise SyncError("已读取私有同步仓库，但快照缺少 study.db。")
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     for suffix in ("-wal", "-shm"):
@@ -275,7 +309,7 @@ def pull_checkpoint(*, force: bool = False) -> dict[str, Any]:
     tmp = DB_PATH.with_suffix(DB_PATH.suffix + ".sync-tmp")
     shutil.copy2(SNAPSHOT_DB, tmp)
     tmp.replace(DB_PATH)
-    _copy_images(SNAPSHOT_IMAGES, DATA / "images")
+    _replace_images(SNAPSHOT_IMAGES, DATA / "images")
     migrate()
 
     manifest = _read_json(MANIFEST, remote)
@@ -286,12 +320,11 @@ def pull_checkpoint(*, force: bool = False) -> dict[str, Any]:
         "db_sha256": _sha256(DB_PATH),
         "device": socket.gethostname(),
     })
-    head_after = _run("rev-parse", "HEAD", check=False)
     return {
         "ok": True,
         "action": "pull",
         "revision": manifest.get("revision"),
         "backup": str(backup) if backup else None,
-        "restart_recommended": bool(head_before and head_after and head_before != head_after),
+        "restart_recommended": False,
         "status": status(refresh_remote=False),
     }
