@@ -4,13 +4,18 @@ import hashlib
 from datetime import date, timedelta
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks
 from pydantic import BaseModel, Field, field_validator
 
 from db import query, query_one, transaction, now_iso, jdump, jload
 from parsers.registry import choose
 from services.mastery import recompute, degrade_on_error
 from services.question_bank import upsert_question_bank, add_attempt
+from services.mistake_ai import (
+    analyze_many_mistakes,
+    configured as mistake_ai_configured,
+    mistake_ids_for_training,
+)
 
 r = APIRouter(prefix='/api')
 BASE = Path(__file__).resolve().parents[1]
@@ -109,6 +114,26 @@ def _trusted_fenbi_question(question, result) -> bool:
         and complete
         and question.stem.strip()
     )
+
+
+def _schedule_mistake_ai(background_tasks: BackgroundTasks, training_id: int) -> dict:
+    mistake_ids = mistake_ids_for_training(training_id)
+    if not mistake_ids:
+        return {'configured': mistake_ai_configured(), 'scheduled': 0, 'mistake_ids': []}
+    if not mistake_ai_configured():
+        return {
+            'configured': False,
+            'scheduled': 0,
+            'mistake_ids': mistake_ids,
+            'message': '错题已入库；AI 尚未配置，可在设置页配置后重新解析。',
+        }
+    background_tasks.add_task(analyze_many_mistakes, mistake_ids)
+    return {
+        'configured': True,
+        'scheduled': len(mistake_ids),
+        'mistake_ids': mistake_ids,
+        'message': f'已自动提交 {len(mistake_ids)} 道错题给 Skill 驱动的 AI 解析。',
+    }
 
 
 @r.get('/trainings')
@@ -363,13 +388,14 @@ def confirm(iid: int, x: ConfirmIn):
 
 
 @r.post('/import/{iid}/commit')
-def commit(iid: int, x: CommitIn):
+def commit(iid: int, x: CommitIn, background_tasks: BackgroundTasks):
     imp = query_one('SELECT * FROM pdf_import WHERE id=?', (iid,))
     if not imp:
         raise HTTPException(404, '导入记录不存在')
     if imp['status'] == 'verified':
         existing = query_one('SELECT * FROM training WHERE pdf_import_id=?', (iid,))
-        return {'already_committed': True, 'training': existing}
+        ai = _schedule_mistake_ai(background_tasks, int(existing['id'])) if existing else {'configured': mistake_ai_configured(), 'scheduled': 0, 'mistake_ids': []}
+        return {'already_committed': True, 'training': existing, 'ai': ai}
 
     questions = query('SELECT * FROM question WHERE pdf_import_id=? ORDER BY seq', (iid,))
     if not questions:
@@ -436,7 +462,15 @@ def commit(iid: int, x: CommitIn):
         recompute(slug)
     for slug in wrong_nodes:
         degrade_on_error(slug, '新确认训练中出现同类错误')
-    return {'training': training(tid), 'mistakes_created': total - correct, 'question_bank_items': len(bank_ids), 'attempts_created': total}
+
+    ai = _schedule_mistake_ai(background_tasks, int(tid))
+    return {
+        'training': training(tid),
+        'mistakes_created': total - correct,
+        'question_bank_items': len(bank_ids),
+        'attempts_created': total,
+        'ai': ai,
+    }
 
 
 @r.post('/import/{iid}/image/assign')
