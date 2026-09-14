@@ -1,8 +1,97 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ page_title }} · 公考工作台</title><link rel="stylesheet" href="/static/css/app.css"></head>
-<body data-page="{{ page_path }}"><div class="narrow-warning">这个工作台为桌面设计，当前窗口较窄，部分表格会横向滚动。</div>
-<aside class="sidebar"><div class="brand"><strong>2027 公考工作台</strong><span>个人备考操作系统</span></div>
-<nav><div class="nav-group">今天</div><a href="/" data-path="/">总览</a><a href="/today" data-path="/today">今日任务</a><a href="/timer" data-path="/timer">学习计时</a><div class="nav-group">训练</div><a href="/trainings" data-path="/trainings">训练记录</a><a href="/mistakes" data-path="/mistakes">错题本</a><a href="/review" data-path="/review">错题复训</a><a href="/import" data-path="/import">导入</a><div class="nav-group">体系</div><a href="/knowledge" data-path="/knowledge">行测体系</a><a href="/shenlun" data-path="/shenlun">申论体系</a><a href="/plan" data-path="/plan">备考规划</a><a href="/progress" data-path="/progress">能力趋势</a><a href="/methods" data-path="/methods">方法与结论</a></nav>
-<div class="sidebar-bottom">{% for e in exams %}<div class="exam-mini"><span>{{ '国考' if e.code=='national' else '广东' }}</span><strong>{{ e.days_left if e.days_left is not none else '—' }}天</strong>{% if not e.is_official %}<em title="{{e.date_source}}">预估</em>{% endif %}</div>{% endfor %}<a class="settings-link" href="/settings">⚙ 设置</a></div></aside>
-<div class="app"><header class="topbar"><div><span class="crumb">工作台 / </span><strong>{{ page_title }}</strong></div><div class="top-actions"><div id="mini-timer" class="mini-timer"><button class="text-btn" data-action="timer-start-shortcut">⏱ 开始计时</button></div><span class="today-label"></span><button class="help-btn" title="快捷键">?</button></div></header><main id="app-main" class="main"><div class="loading">正在读取本地数据…</div></main></div>
-<dialog id="help-dialog"><h2>快捷键</h2><table><tr><td>Ctrl/⌘ + K</td><td>全局搜索</td></tr><tr><td>T</td><td>开始/暂停计时</td></tr><tr><td>G 然后 D/T/K/R</td><td>跳转总览/今日/知识/复训</td></tr><tr><td>A/B/C/D</td><td>复训选择选项</td></tr><tr><td>Enter</td><td>提交答案</td></tr><tr><td>Esc</td><td>关闭浮层</td></tr></table><button class="secondary" onclick="this.closest('dialog').close()">关闭</button></dialog>
-<script type="module" src="/static/js/app.js"></script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{ page_title }} · 2027 公考私教</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body data-page="{{ page_path }}">
+  <div class="narrow-warning">当前窗口较窄，建议使用 1200px 以上宽度以获得完整工作台体验。</div>
+
+  <aside class="sidebar">
+    <div class="brand-block">
+      <a class="brand" href="/" aria-label="返回工作台总览">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3l6.7 2.4v5.4c0 4.2-2.7 8-6.7 10.2-4-2.2-6.7-6-6.7-10.2V5.4L12 3z"/><path d="M8.8 12.1l2 2 4.5-5"/></svg>
+        </span>
+        <span class="brand-copy"><strong>2027 公考私教</strong><small>Personal Exam OS</small></span>
+      </a>
+      <div class="target-chip">
+        <span class="target-dot"></span>
+        <div><small>战略主攻</small><strong>广东省直 / 深圳市直</strong></div>
+      </div>
+    </div>
+
+    <nav class="side-nav" aria-label="主导航">
+      <div class="nav-label">今日作战</div>
+      <a href="/" data-path="/"><span class="nav-ico">⌂</span><span>学习驾驶舱</span></a>
+      <a href="/today" data-path="/today"><span class="nav-ico">✓</span><span>今日任务</span><em>Focus</em></a>
+      <a href="/timer" data-path="/timer"><span class="nav-ico">◷</span><span>深度计时</span></a>
+
+      <div class="nav-label">训练闭环</div>
+      <a href="/trainings" data-path="/trainings"><span class="nav-ico">▤</span><span>训练记录</span></a>
+      <a href="/mistakes" data-path="/mistakes"><span class="nav-ico">!</span><span>错题矩阵</span></a>
+      <a href="/review" data-path="/review"><span class="nav-ico">↻</span><span>错题复训</span></a>
+      <a href="/import" data-path="/import"><span class="nav-ico">⇧</span><span>真题导入</span></a>
+
+      <div class="nav-label">能力体系</div>
+      <a href="/knowledge" data-path="/knowledge"><span class="nav-ico">◇</span><span>行测方法体系</span><em>30</em></a>
+      <a href="/shenlun" data-path="/shenlun"><span class="nav-ico">✎</span><span>申论工坊</span><em>5</em></a>
+      <a href="/plan" data-path="/plan"><span class="nav-ico">◎</span><span>备考路线</span></a>
+      <a href="/progress" data-path="/progress"><span class="nav-ico">↗</span><span>能力趋势</span></a>
+      <a href="/methods" data-path="/methods"><span class="nav-ico">✦</span><span>方法与结论</span></a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="exam-stack">
+        {% for e in exams %}
+        <div class="exam-card">
+          <div class="exam-card-head">
+            <span>{{ '国考副省级' if e.code=='national' else '广东省考' }}</span>
+            {% if not e.is_official %}<em title="{{e.date_source}}">预估</em>{% endif %}
+          </div>
+          <strong>{{ e.days_left if e.days_left is not none else '—' }}<small> 天</small></strong>
+          <span class="exam-date">{{ e.exam_date }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <a class="settings-link" href="/settings"><span>⚙</span><span>偏好设置与备份</span></a>
+      <div class="local-status"><span></span>本地数据引擎已连接</div>
+    </div>
+  </aside>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="top-left">
+        <button class="mobile-menu" aria-label="菜单">☰</button>
+        <div class="breadcrumb"><span>2027 备考</span><b>/</b><strong>{{ page_title }}</strong></div>
+      </div>
+      <div class="top-actions">
+        <button class="command-pill" type="button" onclick="document.querySelector('#help-dialog').showModal()"><span>⌘</span><span>快捷键</span><kbd>?</kbd></button>
+        <div id="mini-timer" class="mini-timer"><button class="timer-quick" data-action="timer-start-shortcut">开始专注</button></div>
+        <div class="date-chip"><span class="date-dot"></span><span class="today-label"></span></div>
+      </div>
+    </header>
+
+    <main id="app-main" class="main"><div class="loading-shell"><span class="loading-orbit"></span><strong>正在加载你的备考状态</strong><small>读取本地 SQLite 数据</small></div></main>
+  </div>
+
+  <dialog id="help-dialog" class="command-dialog">
+    <div class="dialog-head"><div><span class="eyebrow">Keyboard</span><h2>快捷操作</h2></div><button class="icon-button" onclick="this.closest('dialog').close()">×</button></div>
+    <div class="shortcut-grid">
+      <div><kbd>Ctrl / ⌘</kbd><kbd>K</kbd><span>全局搜索</span></div>
+      <div><kbd>T</kbd><span>开始 / 暂停计时</span></div>
+      <div><kbd>G</kbd><kbd>D</kbd><span>返回驾驶舱</span></div>
+      <div><kbd>G</kbd><kbd>T</kbd><span>今日任务</span></div>
+      <div><kbd>G</kbd><kbd>K</kbd><span>知识体系</span></div>
+      <div><kbd>G</kbd><kbd>R</kbd><span>错题复训</span></div>
+      <div><kbd>A–D</kbd><span>复训选择答案</span></div>
+      <div><kbd>Esc</kbd><span>关闭浮层</span></div>
+    </div>
+  </dialog>
+
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
