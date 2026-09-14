@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import gzip
 import json
 import re
 from functools import lru_cache
@@ -10,7 +9,6 @@ from typing import Any
 BASE = Path(__file__).resolve().parents[1]
 METHOD_DIR = BASE / "content" / "methods"
 SOURCE_DIR = METHOD_DIR / "source"
-PACK_PATH = METHOD_DIR / "all_methods.json.gz"
 MANIFEST_PATH = METHOD_DIR / "source_manifest.json"
 MODULE_ORDER = {"资料分析": 0, "判断推理": 1, "言语理解": 2, "数量关系": 3, "常识判断": 4}
 CORE_FIELDS = ("definition", "principle", "signals", "steps", "example", "boundary")
@@ -55,19 +53,9 @@ def _load_source_catalog() -> list[dict[str, Any]]:
     return rows
 
 
-def _load_legacy_pack() -> list[dict[str, Any]]:
-    if not PACK_PATH.exists():
-        return []
-    try:
-        payload = json.loads(gzip.decompress(PACK_PATH.read_bytes()).decode("utf-8"))
-    except (OSError, gzip.BadGzipFile, UnicodeDecodeError, json.JSONDecodeError):
-        return []
-    return [_normalize(item) for item in payload.get("methods", []) if isinstance(item, dict)]
-
-
 @lru_cache(maxsize=1)
 def load_catalog() -> list[dict[str, Any]]:
-    rows = _load_source_catalog() or _load_legacy_pack()
+    rows = _load_source_catalog()
     seen: set[str] = set()
     clean: list[dict[str, Any]] = []
     for row in rows:
