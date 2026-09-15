@@ -8,4 +8,4 @@ if not exist .venv\Scripts\python.exe python -m venv .venv
 .venv\Scripts\python.exe tools\generate_missing_nodes.py
 .venv\Scripts\python.exe tools\import_legacy.py
 .venv\Scripts\python.exe tools\seed.py
-.venv\Scripts\python.exe tools\run_local.py
+.venv\Scripts\python.exe -m tools.run_local
