@@ -33,6 +33,25 @@ def test_safe_knowledge_experience_keeps_note_when_optional_stats_fail(monkeypat
     assert body['warnings']
 
 
+def test_post_config_compat_route_prevents_method_not_allowed(monkeypatch):
+    monkeypatch.setattr(resilience, 'save_secret_config', lambda **kwargs: {
+        'configured': True,
+        'model': 'deepseek-flash',
+        'thinking': bool(kwargs.get('thinking')),
+        'key_source': 'local',
+        'models': [{'id': 'deepseek-flash', 'label': 'DeepSeek V4.1 Flash'}],
+    })
+    monkeypatch.setattr(resilience, 'analyze_pending_required', lambda: None)
+    response = client.post('/api/coach/config', json={
+        'api_key': 'sk-test',
+        'model': 'deepseek-flash',
+        'thinking': False,
+        'clear_key': False,
+    })
+    assert response.status_code == 200, response.text
+    assert response.json()['model'] == 'deepseek-flash'
+
+
 def test_chat_once_uses_nonstream_fallback_and_returns_sources(monkeypatch):
     monkeypatch.setattr(resilience, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-flash', 'thinking': False})
     seen = {}
