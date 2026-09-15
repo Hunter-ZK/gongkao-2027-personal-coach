@@ -34,7 +34,7 @@ def test_global_ai_uses_stable_post_transport_nonblocking_history_and_real_setti
     global_ai = text('frontend/src/components/common/GlobalAiDrawer.tsx')
     coach = text('routers/coach.py')
     resilience = text('routers/resilience.py')
-    assert 'bg-stone-900' in header and 'bg-stone-900' in sidebar
+    assert 'btn-header-coach' in header and "id:'coach'" in sidebar
     assert 'GlobalAiDrawer' in app
     assert '/api/coach/chat-once' in global_ai
     assert "jsonRequest('/api/coach/config',{method:'POST'" in global_ai
@@ -65,24 +65,25 @@ def test_react_timer_is_compact_global_control_not_a_page():
     assert "timer:'/timer'" not in context
 
 
-def test_react_knowledge_keeps_gemini_reading_style_with_hideable_navigation_and_v2_features():
+def test_react_knowledge_uses_primer_split_reading_with_v2_features():
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
     block = text('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
-    assert "xl:grid-cols-[270px_minmax(0,1fr)_250px]" not in knowledge
     assert 'navOpen' in knowledge and 'toolsOpen' in knowledge
-    assert 'md:left-[17rem]' in knowledge
-    assert 'w-[min(900px,calc(100vw-32px))]' in knowledge
-    assert 'grid gap-4 lg:grid-cols-[176px_minmax(0,1fr)]' in block
+    assert 'lg:grid-cols-[260px_minmax(0,1fr)]' in knowledge
+    assert 'xl:grid-cols-[260px_minmax(0,1fr)_240px]' in knowledge
+    assert 'fixed bottom-0 left-0 top-0' in knowledge
+    assert 'fixed bottom-0 right-0 top-0' in knowledge
+    assert 'max-w-[860px]' in knowledge
     assert '知识索引' in knowledge and '本节工具' in knowledge
     assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
     assert '/api/v2/knowledge-safe/recommendations' in knowledge
     assert '/api/v2/knowledge-safe/' in knowledge and '/experience' in knowledge
-    assert '精讲' in knowledge and '完整讲义' in knowledge
+    assert '考场速记' in knowledge and '完整讲义' in knowledge
     assert '学习提示与讲法' in knowledge
     assert '考场调用链' in knowledge and '不要这样做' in knowledge and '怎么练' in knowledge
     assert '不同讲法' in knowledge
-    assert '按这个方法练 5 题' in knowledge
-    assert '情形与扩写' in knowledge and '我的批注' in knowledge
+    assert '立即训练' in knowledge
+    assert '当前情形' in knowledge and '我的批注' in knowledge
     assert '/adoption' in knowledge and '/expansion' in knowledge
     assert '正文阅读不受影响' in knowledge
     assert '30 秒考场唤醒' in knowledge
@@ -94,30 +95,33 @@ def test_react_knowledge_keeps_gemini_reading_style_with_hideable_navigation_and
     assert 'splitKnowledgeMarkdown' in block and '复制本节' in block
 
 
-def test_global_css_is_close_to_civil_gemini_baseline_not_full_page_retheme():
+def test_global_css_uses_primer_neutral_baseline_and_semantic_color():
     css = text('frontend/src/index.css')
-    assert 'Plus Jakarta Sans' in css and 'JetBrains Mono' in css
+    workspace = text('frontend/src/components/common/WorkspaceUi.tsx')
+    assert 'BlinkMacSystemFont' in css and 'JetBrains Mono' in css
     assert '::-webkit-scrollbar' in css
     assert '.knowledge-reader' in css
     assert '.study-markdown' in css
     assert 'html[data-zen]' in css
+    assert '#d0d7de' in css
+    assert '#0969da' in workspace and '#1f883d' in workspace
     assert '[class*="bg-amber-"]' not in css
     assert '.h-1\\.5' not in css
 
 
-def test_react_method_library_has_directory_hierarchy_and_detail_pane():
+def test_react_method_library_has_split_directory_and_progressive_detail():
     methods = text('frontend/src/components/views/MethodsView.tsx')
     assert '方法索引' in methods
-    assert '题型 / 场景' in methods
-    assert 'w-[min(900px,calc(100vw-32px))]' in methods
-    assert 'directoryOpen' in methods and 'md:left-[17rem]' in methods
-    assert "lg:grid-cols-[245px_300px_minmax(0,1fr)]" not in methods
+    assert '模块 → 题型 → 方法' in methods
+    assert 'xl:grid-cols-[280px_minmax(0,1fr)]' in methods
+    assert 'directoryOpen' in methods and 'fixed bottom-0 left-0 top-0' in methods
     assert '/api/knowledge/methods' in methods
-    assert '有考场口令' in methods and '有边界说明' in methods and '有实战例证' in methods
+    assert '有口令' in methods and '有边界' in methods and '有例证' in methods
     assert '考场调用口令' in methods
     assert '考场执行顺序' in methods
     assert '什么时候该想到它' in methods
-    assert '来源说明' in methods
+    assert "type DetailTab='principle'|'example'|'boundary'|'source'" in methods
+    assert "label:'来源'" in methods
     assert '复制方法' in methods
 
 

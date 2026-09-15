@@ -7,19 +7,21 @@ def read(rel: str) -> str:
     return (BASE / rel).read_text(encoding='utf-8')
 
 
-def test_knowledge_reader_uses_hideable_floating_navigation_not_permanent_three_columns():
+def test_knowledge_reader_uses_permanent_desktop_split_and_mobile_drawers():
     src = read('frontend/src/components/views/KnowledgeView.tsx')
     block = read('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
     assert 'navOpen' in src and 'toolsOpen' in src
-    assert 'md:left-[17rem]' in src
-    assert 'w-[min(900px,calc(100vw-32px))]' in src
-    assert 'grid gap-4 lg:grid-cols-[176px_minmax(0,1fr)]' in block
+    assert 'lg:grid-cols-[260px_minmax(0,1fr)]' in src
+    assert 'xl:grid-cols-[260px_minmax(0,1fr)_240px]' in src
+    assert 'fixed bottom-0 left-0 top-0' in src
+    assert 'fixed bottom-0 right-0 top-0' in src
+    assert 'max-w-[860px]' in src
     assert '知识索引' in src
     assert '阅读路径' in src
     assert '学习提示与讲法' in src
     assert '<details' in src
+    assert 'border-t border-[#d8dee4] py-6' in block
     assert '阅读原则' not in src
-    assert 'xl:grid-cols-[270px_minmax(0,1fr)_250px]' not in src
 
 
 def test_knowledge_markdown_is_split_into_smaller_learning_blocks_without_rewriting_source():

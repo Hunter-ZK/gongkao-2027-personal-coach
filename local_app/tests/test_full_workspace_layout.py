@@ -29,8 +29,6 @@ def test_shared_workspace_layout_is_used_across_primary_views():
     for name in views:
         src = text(f'frontend/src/components/views/{name}')
         assert 'WorkspacePage' in src, name
-        # The page shell must use the available workspace rather than recenter the
-        # entire page inside the old fixed-width admin layout.
         assert 'mx-auto space-y-' not in src, name
 
 
@@ -54,7 +52,7 @@ def test_each_view_has_a_layout_specific_information_hierarchy():
     assert '作答草稿演练' in shenlun and 'xl:sticky' in shenlun
 
 
-def test_knowledge_and_methods_are_editorial_flows_not_single_giant_articles():
+def test_knowledge_and_methods_use_split_view_and_progressive_disclosure():
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
     block = text('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
     methods = text('frontend/src/components/views/MethodsView.tsx')
@@ -62,12 +60,16 @@ def test_knowledge_and_methods_are_editorial_flows_not_single_giant_articles():
     assert '30 秒考场唤醒' in knowledge
     assert '学习提示与讲法' in knowledge
     assert '阅读路径' in knowledge
-    assert 'grid gap-5 xl:grid-cols-[minmax(0,1040px)_220px]' in knowledge
-    assert 'grid gap-4 lg:grid-cols-[176px_minmax(0,1fr)]' in block
+    assert 'lg:grid-cols-[260px_minmax(0,1fr)]' in knowledge
+    assert 'xl:grid-cols-[260px_minmax(0,1fr)_240px]' in knowledge
+    assert "label:'考场速记'" in knowledge and "label:'完整讲义'" in knowledge
+    assert 'border-t border-[#d8dee4] py-6' in block
+
     assert '考场调用口令' in methods
     assert '考场执行顺序' in methods
     assert '什么时候该想到它' in methods
-    assert 'grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,.5fr)]' in methods
+    assert 'xl:grid-cols-[280px_minmax(0,1fr)]' in methods
+    assert "type DetailTab='principle'|'example'|'boundary'|'source'" in methods
 
 
 def test_review_keeps_immersive_question_flow_with_new_visual_hierarchy():
@@ -82,7 +84,9 @@ def test_review_keeps_immersive_question_flow_with_new_visual_hierarchy():
 
 def test_workspace_table_visual_system_exists():
     css = text('frontend/src/index.css')
+    shared = text('frontend/src/components/common/WorkspaceUi.tsx')
     assert '.workspace-data-table thead th' in css
     assert '.workspace-data-table tbody td' in css
     assert '.workspace-surface' in css
-    assert 'Plus Jakarta Sans' in css and 'JetBrains Mono' in css
+    assert 'JetBrains Mono' in css
+    assert '#d0d7de' in css and '#0969da' in shared
