@@ -1,51 +1,35 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {AlertTriangle,CheckCircle2,RefreshCw,Sparkles,X,XCircle} from 'lucide-react';
 import {useApp} from '../../context/AppContext';
+import {CopyButton} from './CopyButton';
+import {formatQuestionText} from '../../utils/copy';
 
 type SourceRef={title?:string;source?:string;kind?:string};
 type AiState={status?:string;configured?:boolean;standard_solution_md?:string;fastest_solution_md?:string;fastest_conditions?:string;trap?:string;message?:string;error_message?:string;source_refs?:SourceRef[]};
 type Diagnosis={'一句话结论'?:string;'错因'?:string;'识别信号'?:string;'考场动作'?:string;'止损线'?:string;'关联笔记'?:string[];'验证任务'?:string;'置信度'?:string};
 
-const parseDiagnosis=(value?:string):Diagnosis|null=>{
-  if(!value||!value.trim().startsWith('{'))return null;
-  try{const p=JSON.parse(value);return p&&typeof p==='object'&&('一句话结论'in p||'考场动作'in p)?p:null}catch{return null}
-};
+const parseDiagnosis=(value?:string):Diagnosis|null=>{if(!value||!value.trim().startsWith('{'))return null;try{const p=JSON.parse(value);return p&&typeof p==='object'&&('一句话结论'in p||'考场动作'in p)?p:null}catch{return null}};
 
 export const QuestionModal:React.FC=()=>{
-  const{selectedQuestionId,setSelectedQuestionId,questions,mistakes}=useApp();
-  const[ai,setAi]=useState<AiState|null>(null);const[loading,setLoading]=useState(false);
-  const q=questions.find(x=>x.id===selectedQuestionId);const mistake=mistakes.find(m=>m.questionId===selectedQuestionId);
-  const diagnosis=useMemo(()=>parseDiagnosis(ai?.standard_solution_md),[ai?.standard_solution_md]);
-
+  const{selectedQuestionId,setSelectedQuestionId,questions,mistakes}=useApp();const[ai,setAi]=useState<AiState|null>(null);const[loading,setLoading]=useState(false);
+  const q=questions.find(x=>x.id===selectedQuestionId);const mistake=mistakes.find(m=>m.questionId===selectedQuestionId);const diagnosis=useMemo(()=>parseDiagnosis(ai?.standard_solution_md),[ai?.standard_solution_md]);
   useEffect(()=>{if(!q){setAi(null);return}fetch(`/api/ui/question-ai/${q.id}`).then(async r=>r.ok?r.json():null).then(setAi).catch(()=>setAi(null))},[q?.id]);
   useEffect(()=>{const fn=(e:KeyboardEvent)=>{if(e.key==='Escape')setSelectedQuestionId(null)};window.addEventListener('keydown',fn);return()=>window.removeEventListener('keydown',fn)},[setSelectedQuestionId]);
   if(!selectedQuestionId||!q)return null;
-
-  const analyze=async()=>{
-    setLoading(true);
-    try{
-      const refresh=ai?.status==='done'?'?refresh=true':'';
-      const r=await fetch(`/api/ui/question-ai/${q.id}${refresh}`,{method:'POST'});const p=await r.json();
-      if(!r.ok)throw new Error(p?.error?.message||p?.detail||`HTTP ${r.status}`);setAi(p);
-    }catch(e:any){setAi(a=>({...a,status:'failed',message:e?.message||'AI诊断失败'}))}finally{setLoading(false)}
-  };
-
+  const analyze=async()=>{setLoading(true);try{const refresh=ai?.status==='done'?'?refresh=true':'';const r=await fetch(`/api/ui/question-ai/${q.id}${refresh}`,{method:'POST'});const p=await r.json();if(!r.ok)throw new Error(p?.error?.message||p?.detail||`HTTP ${r.status}`);setAi(p)}catch(e:any){setAi(a=>({...a,status:'failed',message:e?.message||'AI诊断失败'}))}finally{setLoading(false)}};
   const sources=Array.isArray(ai?.source_refs)?ai!.source_refs!.filter(s=>s?.title||s?.source).slice(0,6):[];
+  const questionCopy=formatQuestionText({id:q.id,module:q.module,subType:q.subType,stem:q.stem,options:q.options,correctAnswer:q.correctAnswer,userChoice:q.userChoice,durationSec:q.durationSec},true);
+  const diagnosisCopy=diagnosis?[`【AI诊断】${q.module}｜${q.subType}`,diagnosis['一句话结论']||'',`错因：${diagnosis['错因']||'未验证'}`,`识别信号：${diagnosis['识别信号']||'—'}`,`考场动作：${diagnosis['考场动作']||'—'}`,`止损线：${diagnosis['止损线']||'—'}`,`验证任务：${diagnosis['验证任务']||'—'}`,`置信度：${diagnosis['置信度']||'未验证'}`].join('\n'):'';
 
-  return <div className="fixed inset-0 z-50 bg-stone-900/35 flex items-center justify-center p-4" onClick={()=>setSelectedQuestionId(null)}>
-    <div className="w-full max-w-3xl max-h-[88vh] overflow-hidden bg-white border border-stone-300 flex flex-col" onClick={e=>e.stopPropagation()}>
-      <header className="px-5 py-3 border-b border-stone-200 flex items-center justify-between"><div className="text-xs text-stone-600">{q.module} · {q.subType} · #{q.id}</div><button onClick={()=>setSelectedQuestionId(null)}><X className="w-4 h-4"/></button></header>
-      <div className="overflow-y-auto px-5 md:px-7 py-6 space-y-6">
-        <div className="text-[16px] leading-7 font-medium text-stone-950">{q.stem}</div>
-        <div className="border-t border-stone-200">{q.options.map(opt=>{const correct=opt.label===q.correctAnswer,user=opt.label===q.userChoice;return <div key={opt.label} className={`py-3 border-b border-stone-200 flex gap-3 text-sm leading-6 ${correct?'bg-emerald-50':user&&!correct?'bg-rose-50':''}`}><span className="w-5 font-mono font-semibold">{opt.label}.</span><span className="flex-1">{opt.text}</span>{correct&&<CheckCircle2 className="w-4 h-4 text-emerald-700 mt-1"/>}{user&&!correct&&<XCircle className="w-4 h-4 text-rose-700 mt-1"/>}</div>})}</div>
-        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-stone-600"><span>正确答案：<b className="text-stone-950">{q.correctAnswer}</b></span><span>你的作答：<b>{q.userChoice||'—'}</b></span><span>用时：<b>{q.durationSec?`${q.durationSec}s`:'—'}</b></span></div>
-        {mistake&&<section className="border-t border-stone-300 pt-4"><div className="text-xs font-semibold flex items-center gap-1.5"><AlertTriangle className="w-4 h-4"/>历史错题记录</div><div className="mt-2 text-sm leading-6">{mistake.reason||mistake.errorPatternName||'错因尚待确认'}</div></section>}
-        <section className="border-t border-stone-300 pt-4">
-          <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-bold inline-flex items-center gap-1.5"><Sparkles className="w-4 h-4"/>AI 诊断</h3><button disabled={loading} onClick={()=>void analyze()} className="px-2.5 py-1.5 bg-stone-900 text-white text-[11px] inline-flex items-center gap-1"><RefreshCw className={`w-3 h-3 ${loading?'animate-spin':''}`}/>{ai?.status==='done'?'重新诊断':'生成诊断'}</button></div>
-          {diagnosis?<div className="mt-4"><div className="text-sm font-semibold text-stone-950">{diagnosis['一句话结论']}</div><div className="mt-2 text-[15px] leading-7"><strong>考场动作：</strong>{diagnosis['考场动作']}</div><div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 text-xs text-stone-600"><div><b>错因</b><br/>{diagnosis['错因']||'未验证'}</div><div><b>识别信号</b><br/>{diagnosis['识别信号']||'—'}</div><div><b>止损线</b><br/>{diagnosis['止损线']||'—'}</div><div><b>置信度</b><br/>{diagnosis['置信度']||'未验证'}</div></div><div className="mt-3 text-xs text-stone-600"><b>验证任务：</b>{diagnosis['验证任务']||'—'}</div>{diagnosis['关联笔记']?.length?<div className="mt-2 text-[11px] text-stone-500">关联笔记：{diagnosis['关联笔记'].join(' · ')}</div>:null}</div>:ai?.status==='done'?<div className="mt-4 space-y-4 text-sm leading-6"><div><b>标准解法：</b><div className="whitespace-pre-wrap mt-1 text-stone-700">{ai.standard_solution_md||'—'}</div></div>{ai.fastest_solution_md&&<div><b>最快安全路径：</b><div className="mt-1 text-stone-700">{ai.fastest_solution_md}</div>{ai.fastest_conditions&&<div className="text-xs text-stone-500 mt-1">适用/止损：{ai.fastest_conditions}</div>}</div>}</div>:<div className={`mt-3 text-xs ${ai?.status==='failed'?'text-rose-700':'text-stone-500'}`}>{ai?.message||ai?.error_message||(ai?.status==='pending'||ai?.status==='running'?'深度诊断正在后台生成。':'尚未生成 AI 诊断。')}</div>}
-          {sources.length>0&&<div className="mt-4 pt-3 border-t border-stone-200"><div className="text-[11px] font-semibold text-stone-700 mb-2">Skill / 方法依据</div><div className="flex flex-wrap gap-1.5">{sources.map((s,i)=><span key={`${s.source||s.title}-${i}`} title={s.source||''} className="px-2 py-1 border border-stone-200 bg-stone-50 text-[10px] text-stone-600">{s.kind==='skill_secondary'?'Skill · ':''}{s.title||s.source||'本地材料'}</span>)}</div></div>}
-        </section>
-      </div>
+  return <div className="fixed inset-0 z-50 bg-stone-900/35 flex items-center justify-center p-4" onClick={()=>setSelectedQuestionId(null)}><div className="w-full max-w-3xl max-h-[88vh] overflow-hidden bg-white border border-stone-300 flex flex-col" onClick={e=>e.stopPropagation()}>
+    <header className="px-5 py-3 border-b border-stone-200 flex items-center justify-between"><div className="text-xs text-stone-600">{q.module} · {q.subType} · #{q.id}</div><div className="flex items-center gap-3"><CopyButton text={questionCopy} label="复制题目"/><button onClick={()=>setSelectedQuestionId(null)}><X className="w-4 h-4"/></button></div></header>
+    <div className="overflow-y-auto px-5 md:px-7 py-6 space-y-6"><div className="text-[16px] leading-7 font-medium text-stone-950 whitespace-pre-wrap">{q.stem}</div><div className="border-t border-stone-200">{q.options.map(opt=>{const correct=opt.label===q.correctAnswer,user=opt.label===q.userChoice;return <div key={opt.label} className={`py-3 border-b border-stone-200 flex gap-3 text-sm leading-6 ${correct?'bg-emerald-50':user&&!correct?'bg-rose-50':''}`}><span className="w-5 font-mono font-semibold">{opt.label}.</span><span className="flex-1">{opt.text}</span>{correct&&<CheckCircle2 className="w-4 h-4 text-emerald-700 mt-1"/>}{user&&!correct&&<XCircle className="w-4 h-4 text-rose-700 mt-1"/>}</div>})}</div>
+      <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-stone-600"><span>正确答案：<b className="text-stone-950">{q.correctAnswer}</b></span><span>你的作答：<b>{q.userChoice||'—'}</b></span><span>用时：<b>{q.durationSec?`${q.durationSec}s`:'—'}</b></span></div>
+      {mistake&&<section className="border-t border-stone-300 pt-4"><div className="text-xs font-semibold flex items-center gap-1.5"><AlertTriangle className="w-4 h-4"/>历史错题记录</div><div className="mt-2 text-sm leading-6">{mistake.reason||mistake.errorPatternName||'错因尚待确认'}</div></section>}
+      <section className="border-t border-stone-300 pt-4"><div className="flex items-center justify-between gap-3"><h3 className="text-sm font-bold inline-flex items-center gap-1.5"><Sparkles className="w-4 h-4"/>AI 诊断</h3><div className="flex items-center gap-3">{diagnosis&&<CopyButton text={diagnosisCopy} label="复制诊断"/>}<button disabled={loading} onClick={()=>void analyze()} className="px-2.5 py-1.5 bg-stone-900 text-white text-[11px] inline-flex items-center gap-1"><RefreshCw className={`w-3 h-3 ${loading?'animate-spin':''}`}/>{ai?.status==='done'?'重新诊断':'生成诊断'}</button></div></div>
+        {diagnosis?<div className="mt-4"><div className="text-sm font-semibold text-stone-950">{diagnosis['一句话结论']}</div><div className="mt-2 text-[15px] leading-7"><strong>考场动作：</strong>{diagnosis['考场动作']}</div><div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 text-xs text-stone-600"><div><b>错因</b><br/>{diagnosis['错因']||'未验证'}</div><div><b>识别信号</b><br/>{diagnosis['识别信号']||'—'}</div><div><b>止损线</b><br/>{diagnosis['止损线']||'—'}</div><div><b>置信度</b><br/>{diagnosis['置信度']||'未验证'}</div></div><div className="mt-3 text-xs text-stone-600"><b>验证任务：</b>{diagnosis['验证任务']||'—'}</div>{diagnosis['关联笔记']?.length?<div className="mt-2 text-[11px] text-stone-500">关联笔记：{diagnosis['关联笔记'].join(' · ')}</div>:null}</div>:ai?.status==='done'?<div className="mt-4 space-y-4 text-sm leading-6"><div><b>标准解法：</b><div className="whitespace-pre-wrap mt-1 text-stone-700">{ai.standard_solution_md||'—'}</div></div>{ai.fastest_solution_md&&<div><b>最快安全路径：</b><div className="mt-1 text-stone-700">{ai.fastest_solution_md}</div>{ai.fastest_conditions&&<div className="text-xs text-stone-500 mt-1">适用/止损：{ai.fastest_conditions}</div>}</div>}</div>:<div className={`mt-3 text-xs ${ai?.status==='failed'?'text-rose-700':'text-stone-500'}`}>{ai?.message||ai?.error_message||(ai?.status==='pending'||ai?.status==='running'?'深度诊断正在后台生成。':'尚未生成 AI 诊断。')}</div>}
+        {sources.length>0&&<div className="mt-4 pt-3 border-t border-stone-200"><div className="text-[11px] font-semibold text-stone-700 mb-2">Skill / 方法依据</div><div className="flex flex-wrap gap-1.5">{sources.map((s,i)=><span key={`${s.source||s.title}-${i}`} title={s.source||''} className="px-2 py-1 border border-stone-200 bg-stone-50 text-[10px] text-stone-600">{s.kind==='skill_secondary'?'Skill · ':''}{s.title||s.source||'本地材料'}</span>)}</div></div>}
+      </section>
     </div>
-  </div>;
+  </div></div>;
 };
