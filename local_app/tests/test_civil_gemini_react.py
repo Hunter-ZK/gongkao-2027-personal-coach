@@ -22,7 +22,8 @@ def test_react_data_layer_uses_real_api_not_reference_mock_store():
     import_view = text('frontend/src/components/views/ImportView.tsx')
     assert '/api/ui/bootstrap' in context
     assert 'mockData' not in context
-    assert '/api/v2/import/background' in import_view
+    assert '/api/v2/import/pdf' in import_view
+    assert '/api/v2/background/status' in import_view
     assert 'sampleFenbiText' not in import_view
 
 
