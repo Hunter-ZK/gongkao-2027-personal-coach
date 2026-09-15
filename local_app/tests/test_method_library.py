@@ -1,4 +1,4 @@
-from services.method_library import get_method, load_catalog, search_methods, summary
+from services.method_library import get_method, hierarchy, load_catalog, search_methods, summary
 
 
 def test_catalog_matches_v2_source_method_set():
@@ -14,19 +14,34 @@ def test_catalog_matches_v2_source_method_set():
     }
 
 
-def test_every_method_is_teachable_without_external_video():
+def test_every_method_is_teachable_and_has_directory_category():
     required = ('definition', 'principle', 'signals', 'steps', 'example', 'boundary', 'source_note', 'evidence')
     for row in load_catalog():
         for field in required:
             assert row.get(field), (row['id'], field)
         assert row.get('exam_command'), (row['id'], 'exam_command')
+        assert row.get('category'), (row['id'], 'category')
+        assert row.get('category_path') == [row['module'], row['category']]
 
 
-def test_search_and_lookup():
+def test_directory_hierarchy_covers_all_79_methods():
+    tree = hierarchy()
+    assert sum(x['count'] for x in tree) == 79
+    assert all(x['children'] for x in tree)
+    data = next(x for x in tree if x['module'] == '资料分析')
+    assert data['count'] == 28
+    assert any(x['category'] == '速算与估算' for x in data['children'])
+    assert summary()['hierarchy'] == tree
+
+
+def test_search_lookup_and_category_filter():
     assert get_method('D09')['title'].startswith('415份数法')
+    assert get_method('D09')['category'] in {'速算与估算', '增长体系'}
     assert any('逻辑填空' in x['title'] for x in search_methods('言语理解', '逻辑填空'))
     assert any('工程' in x['title'] for x in search_methods('数量关系', '工程'))
     assert any('六面体' in x['title'] for x in search_methods('判断推理', '六面体'))
+    speed = search_methods(module='资料分析', category='速算与估算')
+    assert speed and all(x['module'] == '资料分析' and x['category'] == '速算与估算' for x in speed)
 
 
 def test_source_grounding_metadata_is_preserved():
@@ -58,5 +73,5 @@ def test_method_api_functions_use_same_catalog():
     from routers.method_catalog import method, method_summary, methods
     assert method_summary()['total'] == 79
     assert method_summary()['mapped'] == 79
-    assert len(methods(module='资料分析', q='')) == 28
+    assert len(methods(module='资料分析', q='', category='')) == 28
     assert method('D09')['module'] == '资料分析'

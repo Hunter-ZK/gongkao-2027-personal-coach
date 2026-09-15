@@ -14,7 +14,7 @@ def test_civil_gemini_react_is_primary_frontend_source():
     assert 'react' in pkg.lower()
     assert 'DashboardView' in app and 'Sidebar' in app and 'Header' in app
     assert "DIST = BASE / 'frontend_dist'" in main
-    assert "ui_bridge.r" in main
+    assert 'ui_bridge.r' in main
 
 
 def test_react_data_layer_uses_real_api_not_reference_mock_store():
@@ -26,23 +26,23 @@ def test_react_data_layer_uses_real_api_not_reference_mock_store():
     assert 'sampleFenbiText' not in import_view
 
 
-def test_reference_visual_shell_and_global_ai_actions_are_present():
+def test_global_ai_has_history_skill_sources_and_real_settings():
     header = text('frontend/src/components/layout/Header.tsx')
     sidebar = text('frontend/src/components/layout/Sidebar.tsx')
-    modal = text('frontend/src/components/common/QuestionModal.tsx')
     app = text('frontend/src/App.tsx')
     global_ai = text('frontend/src/components/common/GlobalAiDrawer.tsx')
     css = text('frontend/src/index.css')
     assert 'bg-stone-900' in header and 'bg-stone-900' in sidebar
-    assert 'AI 永久解析' in modal
     assert 'GlobalAiDrawer' in app
     assert '/api/coach/chat' in global_ai
-    assert '附带当前页面内容' in global_ai
-    assert '/api/ai-formulas' in global_ai
     assert '/api/ai-conversations' in global_ai
     assert '新对话' in global_ai and '历史' in global_ai
-    assert "response_mode:'structured'" in global_ai
     assert 'Skill 依据 · 本轮实际检索' in global_ai
+    assert 'DeepSeek 配置' in global_ai
+    assert '/api/coach/config/test' in global_ai
+    assert 'API Key' in global_ai and '深度思考' in global_ai
+    assert "type=\"password\"" in global_ai
+    assert 'reasoning_content' in global_ai
     assert 'html[data-zen]' in css and '#workbench-shell' in css
 
 
@@ -59,16 +59,32 @@ def test_react_timer_is_compact_global_control_not_a_page():
     assert "timer:'/timer'" not in context
 
 
-def test_react_knowledge_is_card_based_and_methods_have_filters():
+def test_react_knowledge_is_textbook_reader_not_card_wall():
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
+    assert '行测知识目录' in knowledge
+    assert '精讲模式' in knowledge and '完整讲义' in knowledge
+    assert '本节定位' in knowledge
+    assert '这一节真正要抓住的' in knowledge
+    assert '考场调用链' in knowledge
+    assert 'Skill 讲法 · 本节侧重' in knowledge
+    assert '不要这样做' in knowledge and '这节怎么练' in knowledge
+    assert '/reading' in knowledge
+    assert 'CARD ' not in knowledge
+    assert '内容地图' not in knowledge
+
+
+def test_react_method_library_has_directory_hierarchy_and_detail_pane():
     methods = text('frontend/src/components/views/MethodsView.tsx')
-    context = text('frontend/src/context/AppContext.tsx')
-    assert '内容地图' in knowledge
-    assert 'CARD ' in knowledge
-    assert 'parseSections' in knowledge
-    assert 'Markdown>{current.content' not in knowledge
-    assert '快速筛选' in methods
+    assert '方法目录' in methods
+    assert '按模块 → 题型/场景 → 方法进入' in methods
+    assert '/api/knowledge/methods' in methods
     assert '有考场口令' in methods and '有边界说明' in methods and '有实战例证' in methods
+    assert '考场执行顺序' in methods
+    assert '来源说明' in methods
+
+
+def test_knowledge_module_normalization_still_guards_legacy_bootstrap():
+    context = text('frontend/src/context/AppContext.tsx')
     assert 'normalizeKnowledgeModule' in context
     assert "raw!=='guangdong'" in context and "raw!=='national'" in context
     assert "slug.startsWith('data-')" in context and "slug.startsWith('logic-')" in context
