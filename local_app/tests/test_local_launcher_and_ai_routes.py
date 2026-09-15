@@ -14,18 +14,7 @@ def text(path: str) -> str:
     return (BASE / path).read_text(encoding='utf-8')
 
 
-def route_methods(path: str) -> set[str]:
-    out: set[str] = set()
-    for route in app.routes:
-        if getattr(route, 'path', None) == path:
-            out.update(getattr(route, 'methods', set()) or set())
-    return out
-
-
 def test_ai_config_routes_accept_both_transition_methods(monkeypatch):
-    assert {'POST', 'PUT'} <= route_methods('/api/coach/config')
-    assert {'POST', 'PUT'} <= route_methods('/api/coach/config/test')
-
     monkeypatch.setattr(
         coach,
         'save_secret_config',
@@ -37,9 +26,11 @@ def test_ai_config_routes_accept_both_transition_methods(monkeypatch):
             'models': [],
         },
     )
-    saved = client.post('/api/coach/config', json={'api_key': 'sk-test', 'model': 'deepseek-flash', 'thinking': False})
-    assert saved.status_code == 200, saved.text
-    assert saved.json()['configured'] is True
+    body = {'api_key': 'sk-test', 'model': 'deepseek-flash', 'thinking': False}
+    for method in ('post', 'put'):
+        response = getattr(client, method)('/api/coach/config', json=body)
+        assert response.status_code == 200, (method, response.text)
+        assert response.json()['configured'] is True
 
 
 def test_ai_connection_test_works_with_post_and_put(monkeypatch):
