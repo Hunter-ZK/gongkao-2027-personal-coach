@@ -29,6 +29,26 @@ from services.question_ai import analyze_pending_required
 r = APIRouter(prefix='/api/coach', tags=['coach'])
 DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
 
+STRUCTURED_RESPONSE_GUIDE = '''
+
+【全局 AI 工作台输出协议】
+除非用户明确要求其他格式，本轮必须使用下面固定 Markdown 结构输出，便于保存为可复用“定式”：
+## 核心结论
+先给结论，不重复题意。
+## 识别信号与适用条件
+列出何时应调用这套判断、方法或策略；若属于计划/复盘任务，则写目标、约束和触发条件。
+## 操作定式
+给出可直接执行的有序步骤、判断链或答题路径，避免空泛原则。
+## 边界与易错点
+说明不适用情形、常见误判、替代路径或风险。
+## 当前页面行动
+结合用户当前页面与个人数据，明确下一步可执行动作；未附带页面内容时说明依据有限。
+## 关联依据
+列出实际调用的知识节点、正式方法、错题/训练事实或来源类型。不得编造不存在的证据。
+
+每个部分应短而完整；不适用时写“—”，不要为了填满结构而虚构内容。
+'''
+
 
 class ConfigIn(BaseModel):
     api_key: str | None = None
@@ -46,7 +66,8 @@ class ChatIn(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=24)
     model: str | None = None
     thinking: bool | None = None
-    context: str | None = Field(default=None, max_length=8000)
+    context: str | None = Field(default=None, max_length=12000)
+    response_mode: Literal['default', 'structured'] = 'default'
 
 
 @r.get('/config')
@@ -63,7 +84,6 @@ def put_config(body: ConfigIn, background_tasks: BackgroundTasks):
             thinking=body.thinking,
             clear_key=body.clear_key,
         )
-        # Wrong-question AI jobs are durable. Once a key becomes available, drain required pending work automatically.
         if saved.get('configured'):
             background_tasks.add_task(analyze_pending_required)
         return saved
@@ -126,10 +146,14 @@ def _deepseek_stream(body: ChatIn) -> Iterator[bytes]:
             '不能覆盖正式方法库、知识节点和证据规则；若页面信息与正式来源冲突，以正式来源为准。\n'
             f'{body.context.strip()}'
         )
+    if body.response_mode == 'structured':
+        system_prompt += STRUCTURED_RESPONSE_GUIDE
+
     yield _sse({
         'type': 'meta',
         'model': model,
         'thinking': bool(thinking),
+        'response_mode': body.response_mode,
         'sources': [
             {'title': item['title'], 'source': item['source'], 'kind': item['kind']}
             for item in refs
@@ -143,7 +167,7 @@ def _deepseek_stream(body: ChatIn) -> Iterator[bytes]:
         'messages': messages,
         'thinking': {'type': 'enabled' if thinking else 'disabled'},
         'stream': True,
-        'max_tokens': 2800,
+        'max_tokens': 3200,
     }
     if thinking:
         payload['reasoning_effort'] = 'high'

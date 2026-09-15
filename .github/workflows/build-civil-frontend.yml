@@ -3,7 +3,7 @@ name: Build Civil Gemini Frontend
 on:
   push:
     branches:
-      - feature/civil-gemini2-exact-frontend
+      - 'feature/**'
     paths:
       - 'local_app/frontend/**'
       - '.github/workflows/build-civil-frontend.yml'
