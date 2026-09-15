@@ -79,6 +79,7 @@ def test_runtime_regressions_are_guarded_in_react_source():
     review = text('frontend/src/components/views/ReviewView.tsx')
     trainings = text('frontend/src/components/views/TrainingsView.tsx')
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
+    knowledge_block = text('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
     global_ai = text('frontend/src/components/common/GlobalAiDrawer.tsx')
     runner = text('frontend/src/components/common/PracticeRunner.tsx')
     css = text('frontend/src/index.css')
@@ -101,7 +102,12 @@ def test_runtime_regressions_are_guarded_in_react_source():
     assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
     assert "xl:grid-cols-[270px_minmax(0,1fr)_250px]" in knowledge
     assert '按这个方法练 5 题' in knowledge and '补充层' in knowledge
-    assert '/api/coach/chat' in global_ai and '/api/coach/chat-once' in global_ai
+    assert '30 秒考场唤醒' in knowledge and 'KnowledgeSectionBlock' in knowledge
+    assert 'study-markdown' in knowledge_block and '例题演示' in knowledge_block and '边界易错' in knowledge_block
+    assert '/api/coach/chat-once' in global_ai
+    assert "draftModel,setDraftModel]=useState('deepseek-flash')" in global_ai
+    assert "jsonRequest('/api/coach/config',{method:'POST'" in global_ai
+    assert '稳定 POST 通道' in global_ai
     assert 'AI 回答不受影响' in global_ai
     assert '/api/v2/practice/save' in runner and '15000' in runner and '暂停并退出' in runner
     assert "document.title=zenMode?'Work Notes'" in context
