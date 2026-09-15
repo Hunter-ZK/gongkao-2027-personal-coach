@@ -11,20 +11,19 @@ def test_knowledge_reader_uses_paged_desktop_split_and_mobile_drawers():
     src = read('frontend/src/components/views/KnowledgeView.tsx')
     block = read('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
     assert 'navOpen' in src and 'toolsOpen' in src
-    assert 'knowledge-paged-reader' in src
-    assert 'h-[calc(100vh-65px)] overflow-hidden' in src
-    assert 'lg:grid-cols-[260px_minmax(0,1fr)]' in src
-    assert 'xl:grid-cols-[260px_minmax(0,1fr)_250px]' in src
+    assert 'lg:h-[calc(100vh-57px)] lg:overflow-hidden' in src
+    assert 'lg:grid-cols-[240px_minmax(0,1fr)]' in src
+    assert 'xl:grid-cols-[240px_minmax(0,1fr)_260px]' in src
     assert 'fixed bottom-0 left-0 top-0' in src
     assert 'fixed bottom-0 right-0 top-0' in src
-    assert 'max-w-[920px]' in src
+    assert 'max-w-[820px]' in src
     assert '知识索引' in src
-    assert '本节导航' in src
+    assert '本节工具' in src
     assert 'sectionIndex' in src and 'activeSection' in src and 'chooseSection' in src
     assert '上一节' in src and '下一节' in src
     assert '学习提示与讲法' in src
     assert '<details' in src
-    assert 'border-t border-[#d8dee4] py-6' in block
+    assert 'var(--wb-text)' in block and 'var(--wb-border)' in block
     assert '阅读原则' not in src
 
 

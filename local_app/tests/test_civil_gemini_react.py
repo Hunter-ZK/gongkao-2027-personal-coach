@@ -65,22 +65,20 @@ def test_react_timer_is_compact_global_control_not_a_page():
     assert "timer:'/timer'" not in context
 
 
-def test_react_knowledge_uses_paged_split_reader_with_v2_features():
+def test_react_knowledge_uses_three_pane_paged_reader_with_v2_features():
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
     block = text('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
     assert 'navOpen' in knowledge and 'toolsOpen' in knowledge
-    assert 'knowledge-paged-reader' in knowledge
-    assert 'h-[calc(100vh-65px)] overflow-hidden' in knowledge
-    assert 'lg:grid-cols-[260px_minmax(0,1fr)]' in knowledge
-    assert 'xl:grid-cols-[260px_minmax(0,1fr)_250px]' in knowledge
+    assert 'lg:h-[calc(100vh-57px)] lg:overflow-hidden' in knowledge
+    assert 'lg:grid-cols-[240px_minmax(0,1fr)]' in knowledge
+    assert 'xl:grid-cols-[240px_minmax(0,1fr)_260px]' in knowledge
     assert 'fixed bottom-0 left-0 top-0' in knowledge
     assert 'fixed bottom-0 right-0 top-0' in knowledge
-    assert 'max-w-[920px]' in knowledge
+    assert 'max-w-[820px]' in knowledge
     assert 'sectionIndex' in knowledge and 'activeSection' in knowledge and 'chooseSection' in knowledge
-    assert '上一节' in knowledge and '下一节' in knowledge and '右侧目录可直接切章' in knowledge
-    assert '{activeSection?<KnowledgeSectionBlock' in knowledge
-    assert '{sections.map(section=><KnowledgeSectionBlock' not in knowledge
-    assert '知识索引' in knowledge and '本节导航' in knowledge
+    assert '上一节' in knowledge and '下一节' in knowledge
+    assert 'KnowledgeSectionBlock key={activeSection.id}' in knowledge
+    assert '知识索引' in knowledge and '本节工具' in knowledge
     assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
     assert '/api/v2/knowledge-safe/recommendations' in knowledge
     assert '/api/v2/knowledge-safe/' in knowledge and '/experience' in knowledge
@@ -100,33 +98,31 @@ def test_react_knowledge_uses_paged_split_reader_with_v2_features():
     assert 'splitKnowledgeMarkdown' in block and '复制本节' in block
 
 
-def test_global_css_uses_high_contrast_light_theme_and_true_dark_zen_mode():
+def test_global_css_uses_semantic_light_dark_theme_tokens():
     css = text('frontend/src/index.css')
     workspace = text('frontend/src/components/common/WorkspaceUi.tsx')
     header = text('frontend/src/components/layout/Header.tsx')
-    assert 'BlinkMacSystemFont' in css and 'JetBrains Mono' in css
+    sidebar = text('frontend/src/components/layout/Sidebar.tsx')
+    assert 'JetBrains Mono' in css
     assert '::-webkit-scrollbar' in css
     assert '.knowledge-reader' in css
     assert '.study-markdown' in css
-    assert 'html[data-zen] { color-scheme: dark; }' in css
-    assert '#0d1117' in css and '#161b22' in css and '#30363d' in css
-    assert 'filter: none !important' in css
-    assert 'filter: grayscale' not in css
-    assert '#a8b3bf' in css and '#0969da' in workspace
-    assert "bg-[#0969da] text-white" in workspace
+    assert '--wb-bg:' in css and '--wb-sidebar:' in css and '--wb-surface:' in css
+    assert '--wb-accent:' in css and '--wb-border:' in css
+    assert 'html[data-zen]' in css and 'color-scheme: dark' in css
+    assert 'var(--wb-surface)' in workspace and 'var(--wb-accent)' in workspace
     assert '隐藏模式：深色界面' in header
-    assert '[class*="bg-amber-"]' not in css
-    assert '.h-1\\.5' not in css
+    assert 'gongkao_sidebar_collapsed' in sidebar
+    assert 'filter: grayscale' not in css
 
 
-def test_react_method_library_is_fixed_one_screen_with_progressive_detail():
+def test_react_method_library_is_three_pane_fixed_workspace():
     methods = text('frontend/src/components/views/MethodsView.tsx')
     assert '方法索引' in methods
     assert '模块 → 题型 → 方法' in methods
     assert 'methods-one-screen' in methods
-    assert 'h-[calc(100vh-65px)] overflow-hidden' in methods
-    assert 'xl:grid-cols-[290px_minmax(0,1fr)]' in methods
-    assert 'lg:grid-cols-[minmax(0,.92fr)_minmax(0,1.08fr)]' in methods
+    assert 'lg:h-[calc(100vh-57px)] lg:overflow-hidden' in methods
+    assert 'xl:grid-cols-[250px_390px_minmax(0,1fr)]' in methods
     assert 'min-h-0 flex-1 overflow-y-auto' in methods
     assert 'directoryOpen' in methods and 'fixed bottom-0 left-0 top-0' in methods
     assert '/api/knowledge/methods' in methods
@@ -136,7 +132,7 @@ def test_react_method_library_is_fixed_one_screen_with_progressive_detail():
     assert '什么时候该想到它' in methods
     assert "type DetailTab='principle'|'example'|'boundary'|'source'" in methods
     assert "label:'来源'" in methods
-    assert '详情区独立滚动，页面本身不再向下拖。' in methods
+    assert '左侧负责调用与执行' in methods
     assert '复制方法' in methods
 
 
