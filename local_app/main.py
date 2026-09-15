@@ -31,7 +31,7 @@ BASE = Path(__file__).resolve().parent
 DIST = BASE / 'frontend_dist'
 migrate()
 
-app = FastAPI(title='2027 公考个人备考工作台', version='2.2.0')
+app = FastAPI(title='2027 公考个人备考工作台', version='2.2.1')
 app.mount('/static', StaticFiles(directory=BASE / 'static'), name='static')
 app.mount('/data-images', StaticFiles(directory=BASE / 'data' / 'images'), name='data-images')
 if (DIST / 'assets').exists():
@@ -64,7 +64,7 @@ def health():
     return {
         'ok': True,
         'service': 'gongkao-workbench',
-        'version': '2.2.0',
+        'version': '2.2.1',
         'frontend': 'civil-gemini-react' if (DIST / 'index.html').exists() else 'legacy-fallback',
     }
 
@@ -79,7 +79,7 @@ async def err(req: Request, exc: Exception):
 PAGES = {
     '/': '总览', '/today': '今日任务', '/trainings': '训练记录', '/questions': '题库',
     '/mistakes': '错题本', '/review': '错题复训', '/import': '导入', '/knowledge': '行测体系', '/shenlun': '申论体系',
-    '/coach': 'AI方法教练', '/plan': '周度攻坚日程', '/progress': '作答表现看板', '/methods': '方法与结论', '/settings': '设置',
+    '/coach': 'AI方法教练', '/plan': '周度攻坚日程', '/progress': '作答表现看板', '/timer': '学习投入看板', '/methods': '方法与结论', '/settings': '设置',
 }
 
 
