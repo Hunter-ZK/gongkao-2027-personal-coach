@@ -5,95 +5,36 @@
     font-family: "Plus Jakarta Sans", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     letter-spacing: -0.01em;
   }
+
   code, kbd, samp, pre {
     font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 }
 
+/* Civil_gemini2 baseline: restrained stone palette and subtle scrollbar. */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
 
-/*
-  Zen mode deliberately resembles a neutral work document rather than a study product:
-  light grayscale paper, serif body copy, no colored status language, no progress decoration.
-*/
-html[data-zen] { color-scheme: light; background: #f3f3f1; }
+/* Zen keeps the original Gemini layout. It only neutralizes study wording/background noise. */
 html[data-zen] body,
 html[data-zen] #workbench-shell,
-html[data-zen] #main-content-area {
-  background: #f3f3f1 !important;
-  color: #262626 !important;
-  font-family: Georgia, "Noto Serif SC", "Songti SC", "SimSun", serif !important;
-  letter-spacing: 0 !important;
-}
+html[data-zen] #main-content-area { background: #f5f5f4; }
 html[data-zen] #app-header,
 html[data-zen] #app-sidebar-desktop,
 html[data-zen] #app-sidebar-mobile,
 html[data-zen] #global-ai-drawer,
-html[data-zen] #compact-timer-popover {
-  background: #f8f8f6 !important;
-  border-color: #cfcfcb !important;
-  box-shadow: none !important;
-}
-html[data-zen] #main-content-area .bg-white,
-html[data-zen] #global-ai-drawer .bg-white,
-html[data-zen] .bg-stone-50,
-html[data-zen] .bg-stone-50\/50,
-html[data-zen] .bg-stone-50\/60,
-html[data-zen] .bg-stone-50\/70,
-html[data-zen] .bg-stone-50\/80,
-html[data-zen] .bg-stone-100,
-html[data-zen] .bg-stone-100\/60,
-html[data-zen] .bg-stone-100\/70,
-html[data-zen] [class*="bg-amber-"],
-html[data-zen] [class*="bg-rose-"],
-html[data-zen] [class*="bg-emerald-"],
-html[data-zen] [class*="bg-blue-"],
-html[data-zen] [class*="bg-indigo-"],
-html[data-zen] [class*="bg-purple-"] { background-color: #f8f8f6 !important; }
-html[data-zen] .bg-stone-900,
-html[data-zen] .bg-stone-800,
-html[data-zen] .bg-zinc-800 { background-color: #353535 !important; }
-html[data-zen] .text-stone-950,
-html[data-zen] .text-stone-900,
-html[data-zen] .text-stone-800,
-html[data-zen] [class*="text-amber-"],
-html[data-zen] [class*="text-rose-"],
-html[data-zen] [class*="text-emerald-"],
-html[data-zen] [class*="text-blue-"],
-html[data-zen] [class*="text-indigo-"],
-html[data-zen] [class*="text-purple-"] { color: #262626 !important; }
-html[data-zen] .text-stone-700,
-html[data-zen] .text-stone-600,
-html[data-zen] .text-stone-500 { color: #5e5e5a !important; }
-html[data-zen] .text-stone-400,
-html[data-zen] .text-stone-300 { color: #8b8b86 !important; }
-html[data-zen] [class*="border-stone-"],
-html[data-zen] [class*="border-amber-"],
-html[data-zen] [class*="border-rose-"],
-html[data-zen] [class*="border-emerald-"],
-html[data-zen] [class*="border-blue-"],
-html[data-zen] [class*="border-indigo-"],
-html[data-zen] [class*="border-purple-"] { border-color: #cfcfcb !important; }
-html[data-zen] input,
-html[data-zen] textarea,
-html[data-zen] select { background: #fff !important; color: #262626 !important; border-color: #bdbdb8 !important; }
-html[data-zen] #global-ai-fab { background: #353535 !important; color: #f5f5f2 !important; }
-html[data-zen] .h-1\.5,
-html[data-zen] .h-2 { display: none !important; }
-html[data-zen] .animate-pulse { animation: none !important; }
-html[data-zen] [class*="ring-"] { --tw-ring-color: transparent !important; }
-html[data-zen] .shadow-xs,
-html[data-zen] .shadow-sm,
-html[data-zen] .shadow-2xs,
-html[data-zen] .shadow-xl,
-html[data-zen] .shadow-2xl { box-shadow: none !important; }
-html[data-zen] ::-webkit-scrollbar-thumb { background: #aaa9a5; }
+html[data-zen] #compact-timer-popover { box-shadow: none; }
+html[data-zen] .animate-pulse { animation: none; }
 
 .knowledge-reader p { margin: 0.75rem 0; }
 .knowledge-reader ul,.knowledge-reader ol { margin: 0.75rem 0; padding-left: 1.5rem; }
 .knowledge-reader li { margin: 0.3rem 0; }
+.knowledge-reader h1,.knowledge-reader h2,.knowledge-reader h3,.knowledge-reader h4 { margin-top: 1.3rem; margin-bottom: 0.55rem; font-weight: 700; line-height: 1.35; }
+.knowledge-reader blockquote { margin: 1rem 0; padding: 0.6rem 0.9rem; border-left: 3px solid #d6d3d1; background: #fafaf9; color: #57534e; }
 .knowledge-reader table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92em; }
 .knowledge-reader th,.knowledge-reader td { border: 1px solid #d6d3d1; padding: 0.5rem 0.6rem; vertical-align: top; }
+.knowledge-reader th { background: #fafaf9; font-weight: 600; }
+
+/* Keep this file intentionally close to Civil_gemini2; feature-specific styling stays in components. */

@@ -43,17 +43,17 @@ def test_ai_config_test_uses_draft_key_without_exposing_it(monkeypatch):
     monkeypatch.setattr(coach, '_request_text', fake_request)
     response = client.post('/api/coach/config/test', json={
         'api_key': 'sk-draft-not-persisted',
-        'model': 'deepseek-flash',
+        'model': 'deepseek-v4-flash',
         'thinking': True,
     })
     assert response.status_code == 200, response.text
     body = response.json()
     assert body['ok'] is True
-    assert body['model'] == 'deepseek-v4-flash'
+    assert body['model'] == 'deepseek-flash'
     assert body['thinking'] is True
     assert 'sk-draft-not-persisted' not in response.text
     assert seen['key'] == 'sk-draft-not-persisted'
-    assert seen['payload']['model'] == 'deepseek-v4-flash'
+    assert seen['payload']['model'] == 'deepseek-flash'
     assert seen['payload']['thinking']['type'] == 'enabled'
 
 

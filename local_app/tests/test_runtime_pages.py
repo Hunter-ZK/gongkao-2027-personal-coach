@@ -39,10 +39,16 @@ def test_primary_read_apis_are_runtime_safe():
         assert response.status_code == 200, f'{endpoint}: {response.text}'
         assert isinstance(response.json(), dict)
 
-    for endpoint in ('/api/v2/knowledge/recommendations', '/api/v2/practice/recommendations'):
-        response = client.get(endpoint)
-        assert response.status_code == 200, f'{endpoint}: {response.text}'
-        assert isinstance(response.json(), list)
+    practice = client.get('/api/v2/practice/recommendations')
+    assert practice.status_code == 200, practice.text
+    assert isinstance(practice.json(), list)
+
+    safe_recs = client.get('/api/v2/knowledge-safe/recommendations')
+    assert safe_recs.status_code == 200, safe_recs.text
+    safe_payload = safe_recs.json()
+    assert isinstance(safe_payload, dict)
+    assert isinstance(safe_payload.get('items'), list)
+    assert isinstance(safe_payload.get('degraded'), bool)
 
     nodes = payload.get('knowledgeNodes') or []
     if nodes:
@@ -52,12 +58,13 @@ def test_primary_read_apis_are_runtime_safe():
         pack = reading.json()
         assert isinstance(pack.get('sections'), list)
         assert isinstance(pack.get('lesson_sections'), list)
-        experience = client.get(f'/api/v2/knowledge/{slug}/experience')
+        experience = client.get(f'/api/v2/knowledge-safe/{slug}/experience')
         assert experience.status_code == 200, experience.text
         xp = experience.json()
         assert isinstance(xp.get('units'), list)
         assert xp['units'], slug
         assert isinstance(xp.get('data_band'), dict)
+        assert isinstance(xp.get('warnings'), list)
 
     integrity = client.get('/api/v2/knowledge/integrity')
     assert integrity.status_code == 200, integrity.text
@@ -72,6 +79,7 @@ def test_runtime_regressions_are_guarded_in_react_source():
     review = text('frontend/src/components/views/ReviewView.tsx')
     trainings = text('frontend/src/components/views/TrainingsView.tsx')
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
+    global_ai = text('frontend/src/components/common/GlobalAiDrawer.tsx')
     runner = text('frontend/src/components/common/PracticeRunner.tsx')
     css = text('frontend/src/index.css')
 
@@ -89,8 +97,13 @@ def test_runtime_regressions_are_guarded_in_react_source():
 
     assert '/api/v2/review/save' in review and '15000' in review and '暂停并退出' in review
     assert '/api/v2/practice/recommendations' in trainings and '推荐训练' in trainings and '自选题目' in trainings
-    assert '/api/v2/knowledge/recommendations' in knowledge and '现在最值得看的笔记' in knowledge
-    assert '按这个方法练 5 题' in knowledge and '展开出处层' in knowledge
+    assert '/api/v2/knowledge-safe/recommendations' in knowledge
+    assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
+    assert "xl:grid-cols-[270px_minmax(0,1fr)_250px]" in knowledge
+    assert '按这个方法练 5 题' in knowledge and '补充层' in knowledge
+    assert '/api/coach/chat' in global_ai and '/api/coach/chat-once' in global_ai
+    assert 'AI 回答不受影响' in global_ai
     assert '/api/v2/practice/save' in runner and '15000' in runner and '暂停并退出' in runner
     assert "document.title=zenMode?'Work Notes'" in context
-    assert 'font-family: Georgia' in css
+    assert 'Plus Jakarta Sans' in css and 'JetBrains Mono' in css
+    assert '[class*="bg-amber-"]' not in css
