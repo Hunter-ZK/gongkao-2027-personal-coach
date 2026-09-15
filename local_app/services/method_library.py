@@ -48,10 +48,12 @@ def _infer_category(row: dict[str, Any]) -> str:
     text = ' '.join(str(row.get(k) or '') for k in ('title', 'definition', 'source_method_label', 'node_slug')).lower()
 
     if module == '资料分析':
-        if any(k in text for k in ('abrx', '读题', '对象', '时期', '问法', '定位')):
-            return '读题定位与ABRX'
+        # A method may mention ABRX as its theoretical parent while actually being a speed-calculation technique.
+        # Classify concrete speed cues first so 415份数法/截位直除等不会被 the generic ABRX token swallowed.
         if any(k in text for k in ('截位', '直除', '415', '份数', '假设', '分数', '估算', '首数', '差分', '化除为乘')):
             return '速算与估算'
+        if any(k in text for k in ('abrx', '读题', '对象', '时期', '问法', '定位')):
+            return '读题定位与ABRX'
         if any(k in text for k in ('增长率', '增长量', '基期', '现期', '年均')):
             return '增长体系'
         if any(k in text for k in ('比重', '平均', '倍数', '混合')):

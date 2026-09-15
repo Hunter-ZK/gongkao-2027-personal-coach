@@ -48,7 +48,7 @@ STRUCTURED_RESPONSE_GUIDE = '''
 
 额外规则：
 1. 禁止用长段背景、重复题意和空泛鼓励凑字数。
-2. 必须实际使用本轮检索到的 Skill / 正式方法材料；若无直接证据就明确说明。
+2. 必须实际使用“本轮实际检索”到的 Skill / 正式方法材料；若无直接证据就明确说明。
 3. 检索到“考点讲法”时必须吸收其中的考场入口/取舍/速解重点，而不是只在末尾挂来源。
 4. 最后一行固定写“依据：材料A；材料B”，只列本轮真正使用的 1–3 个材料标题。
 '''
@@ -338,7 +338,6 @@ def _deepseek_stream(body: ChatIn) -> Iterator[bytes]:
             yield _sse({'type': 'delta', 'text': fallback, 'fallback': True})
         yield _sse({'type': 'done'})
     except urllib.error.HTTPError as exc:
-        # Parameter/model compatibility failures get one safe non-stream retry without thinking controls.
         if exc.code == 400 and not emitted:
             try:
                 fallback = _fallback_chat_text(model, messages, api_key)

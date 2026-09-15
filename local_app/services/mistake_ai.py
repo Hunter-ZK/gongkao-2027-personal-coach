@@ -149,7 +149,6 @@ def _request_json(payload: dict[str, Any], api_key: str) -> str:
     if isinstance(content, (dict, list)):
         return json.dumps(content, ensure_ascii=False)
     text = str(content or '').strip()
-    # reasoning_content is private reasoning, not the final answer. Never parse or expose it as user content.
     if not text:
         raise DeepSeekEmptyContent('DeepSeek 返回的 final content 为空')
     return text
@@ -195,8 +194,6 @@ def _call_deepseek(system_prompt: str, user_prompt: str) -> dict[str, Any]:
         except (DeepSeekEmptyContent, RuntimeError) as exc:
             errors.append(str(exc))
 
-    # DeepSeek documents that JSON Output can occasionally return empty content. Final fallback removes
-    # response_format while keeping an explicit JSON-only contract, then parses the returned object ourselves.
     fallback = _json_payload(
         model,
         system_prompt + '\n\n最终输出必须是一个 JSON 对象，禁止解释、禁止 Markdown。',
@@ -252,7 +249,7 @@ def analyze_mistake(mistake_id: int, *, overwrite: bool = False) -> dict[str, An
     query_text = f"{item.get('module') or ''} {item.get('subtype') or ''} {item.get('stem_md') or ''} {option_text}"
     system_prompt, refs = build_system_prompt(query_text)
     source_titles = [ref.get('title') for ref in refs[:4] if ref.get('title')]
-    prompt = f"""请解析下面这道用户真实错题。优先服从系统提示里检索到的本地正式方法、知识节点和 Skill 讲法视角。
+    prompt = f"""请解析下面这道用户真实错题。优先服从系统提示里检索到的本地 Skill / V2 方法材料；其中正式方法与知识节点负责正确性底座，Skill 讲法视角负责补充考场入口、取舍和速解重点。
 
 题目模块：{item.get('module') or '未分类'}
 题型：{item.get('subtype') or '未分类'}
