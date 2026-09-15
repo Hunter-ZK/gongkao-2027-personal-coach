@@ -15,23 +15,25 @@ def test_skill_sources_are_registered():
 
 
 def test_current_model_and_legacy_alias_are_normalized():
-    assert skill.DEFAULT_MODEL == 'deepseek-flash'
-    assert skill.normalize_model('deepseek-v4-flash') == 'deepseek-flash'
-    assert skill.normalize_model('deepseek-flash') == 'deepseek-flash'
+    assert skill.DEFAULT_MODEL == 'deepseek-v4-flash'
+    assert skill.normalize_model('deepseek-v4-flash') == 'deepseek-v4-flash'
+    assert skill.normalize_model('deepseek-flash') == 'deepseek-v4-flash'
+    assert skill.normalize_model('deepseek-chat') == 'deepseek-v4-flash'
+    assert skill.normalize_model('deepseek-reasoner') == 'deepseek-v4-flash'
 
 
 def test_secret_config_never_returns_key_and_migrates_model(tmp_path, monkeypatch):
     path = tmp_path / 'secrets.json'
     monkeypatch.setattr(skill, 'SECRETS_PATH', path)
     monkeypatch.delenv('DEEPSEEK_API_KEY', raising=False)
-    public = skill.save_secret_config(api_key='sk-test-secret', model='deepseek-v4-flash', thinking=False)
+    public = skill.save_secret_config(api_key='sk-test-secret', model='deepseek-flash', thinking=False)
     assert public['configured'] is True
-    assert public['model'] == 'deepseek-flash'
+    assert public['model'] == 'deepseek-v4-flash'
     assert 'api_key' not in public
     assert 'sk-test-secret' not in json.dumps(public)
     stored = json.loads(path.read_text(encoding='utf-8'))
     assert stored['api_key'] == 'sk-test-secret'
-    assert stored['model'] == 'deepseek-flash'
+    assert stored['model'] == 'deepseek-v4-flash'
 
 
 def test_system_prompt_retrieves_local_material():
