@@ -9,11 +9,13 @@ def read(rel: str) -> str:
 
 def test_knowledge_reader_uses_hideable_floating_navigation_not_permanent_three_columns():
     src = read('frontend/src/components/views/KnowledgeView.tsx')
+    block = read('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
     assert 'navOpen' in src and 'toolsOpen' in src
     assert 'md:left-[17rem]' in src
-    assert 'w-[min(760px,calc(100vw-32px))]' in src
-    assert 'grid-cols-[176px_minmax(0,1fr)]' in src
+    assert 'w-[min(900px,calc(100vw-32px))]' in src
+    assert 'grid gap-4 lg:grid-cols-[176px_minmax(0,1fr)]' in block
     assert '知识索引' in src
+    assert '阅读路径' in src
     assert '学习提示与讲法' in src
     assert '<details' in src
     assert '阅读原则' not in src
