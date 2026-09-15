@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - 'feature/**'
+      - 'fix/**'
+      - 'hotfix/**'
     paths:
       - 'local_app/frontend/**'
       - '.github/workflows/build-civil-frontend.yml'
