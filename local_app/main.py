@@ -13,6 +13,7 @@ from routers import (
     ai_workspace,
     analytics,
     coach,
+    coach_compat,
     dashboard,
     experience_v2,
     knowledge,
@@ -34,7 +35,7 @@ BASE = Path(__file__).resolve().parent
 DIST = BASE / 'frontend_dist'
 migrate()
 
-app = FastAPI(title='2027 公考个人备考工作台', version='2.3.1')
+app = FastAPI(title='2027 公考个人备考工作台', version='2.3.2')
 app.mount('/static', StaticFiles(directory=BASE / 'static'), name='static')
 app.mount('/data-images', StaticFiles(directory=BASE / 'data' / 'images'), name='data-images')
 if (DIST / 'assets').exists():
@@ -51,6 +52,7 @@ for router in [
     plan.r,
     misc.r,
     coach.r,
+    coach_compat.r,
     resilience.r,
     ai_workspace.r,
     ai_workspace.history_r,
@@ -70,7 +72,7 @@ def health():
     return {
         'ok': True,
         'service': 'gongkao-workbench',
-        'version': '2.3.1',
+        'version': '2.3.2',
         'frontend': 'civil-gemini-react' if (DIST / 'index.html').exists() else 'legacy-fallback',
     }
 
@@ -113,4 +115,4 @@ def shell(request: Request, path: str = ''):
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run('main:app', host='127.0.0.1', port=8765, reload=False)
+    uvicorn.run('main:app', host='127.0.0.1', port=8000, reload=False)

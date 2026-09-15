@@ -8,5 +8,4 @@ if not exist .venv\Scripts\python.exe python -m venv .venv
 .venv\Scripts\python.exe tools\generate_missing_nodes.py
 .venv\Scripts\python.exe tools\import_legacy.py
 .venv\Scripts\python.exe tools\seed.py
-start "" /b .venv\Scripts\python.exe -c "import time,webbrowser;time.sleep(2);webbrowser.open('http://127.0.0.1:8000')"
-.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+.venv\Scripts\python.exe tools\run_local.py
