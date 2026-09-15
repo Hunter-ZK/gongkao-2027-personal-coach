@@ -75,6 +75,7 @@ def test_runtime_regressions_are_guarded_in_react_source():
     context = text('frontend/src/context/AppContext.tsx')
     app = text('frontend/src/App.tsx')
     sidebar = text('frontend/src/components/layout/Sidebar.tsx')
+    header = text('frontend/src/components/layout/Header.tsx')
     today = text('frontend/src/components/views/TodayTasksView.tsx')
     review = text('frontend/src/components/views/ReviewView.tsx')
     trainings = text('frontend/src/components/views/TrainingsView.tsx')
@@ -103,10 +104,12 @@ def test_runtime_regressions_are_guarded_in_react_source():
     assert '/api/v2/knowledge-safe/recommendations' in knowledge
     assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
     assert 'WorkspacePage' in knowledge and 'WorkspacePage' in methods
-    assert 'lg:grid-cols-[260px_minmax(0,1fr)]' in knowledge
-    assert 'xl:grid-cols-[260px_minmax(0,1fr)_240px]' in knowledge
-    assert 'max-w-[860px]' in knowledge
-    assert '知识索引' in knowledge and '阅读路径' in knowledge
+    assert 'knowledge-paged-reader' in knowledge
+    assert 'xl:grid-cols-[260px_minmax(0,1fr)_250px]' in knowledge
+    assert 'max-w-[920px]' in knowledge
+    assert 'sectionIndex' in knowledge and 'activeSection' in knowledge
+    assert '上一节' in knowledge and '下一节' in knowledge
+    assert '知识索引' in knowledge and '本节导航' in knowledge
     assert 'navOpen' in knowledge and 'toolsOpen' in knowledge
     assert '学习提示与讲法' in knowledge and '当前情形' in knowledge
     assert '立即训练' in knowledge and '复制整节' in knowledge
@@ -114,10 +117,12 @@ def test_runtime_regressions_are_guarded_in_react_source():
     assert 'study-markdown' in knowledge_block and '例题演示' in knowledge_block and '边界易错' in knowledge_block
     assert 'splitKnowledgeMarkdown' in knowledge_block and '复制本节' in knowledge_block
 
-    assert 'xl:grid-cols-[280px_minmax(0,1fr)]' in methods
+    assert 'methods-one-screen' in methods
+    assert 'xl:grid-cols-[290px_minmax(0,1fr)]' in methods
     assert '模块 → 题型 → 方法' in methods
     assert '方法索引' in methods and 'directoryOpen' in methods and 'fixed bottom-0 left-0 top-0' in methods
     assert "type DetailTab='principle'|'example'|'boundary'|'source'" in methods
+    assert '详情区独立滚动，页面本身不再向下拖。' in methods
     assert 'workspace-page' in workspace and 'HeroPanel' in workspace
 
     assert '/api/coach/chat-once' in global_ai
@@ -128,6 +133,9 @@ def test_runtime_regressions_are_guarded_in_react_source():
     assert '/api/v2/practice/save' in runner and '15000' in runner and '暂停并退出' in runner
     assert '复制题目' in runner
     assert "document.title=zenMode?'Work Notes'" in context
+    assert '隐藏模式：深色界面' in header
     assert 'BlinkMacSystemFont' in css and 'JetBrains Mono' in css
-    assert '#d0d7de' in css
+    assert 'html[data-zen] { color-scheme: dark; }' in css
+    assert '#0d1117' in css and '#161b22' in css and '#30363d' in css
+    assert 'filter: grayscale' not in css
     assert '[class*="bg-amber-"]' not in css
