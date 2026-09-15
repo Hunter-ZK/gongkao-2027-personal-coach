@@ -26,11 +26,16 @@ def test_react_data_layer_uses_real_api_not_reference_mock_store():
     assert 'sampleFenbiText' not in import_view
 
 
-def test_reference_visual_shell_and_real_actions_are_present():
+def test_reference_visual_shell_and_global_ai_actions_are_present():
     header = text('frontend/src/components/layout/Header.tsx')
     sidebar = text('frontend/src/components/layout/Sidebar.tsx')
     modal = text('frontend/src/components/common/QuestionModal.tsx')
-    coach = text('frontend/src/components/views/CoachView.tsx')
+    app = text('frontend/src/App.tsx')
+    global_ai = text('frontend/src/components/common/GlobalAiDrawer.tsx')
     assert 'bg-stone-900' in header and 'bg-stone-900' in sidebar
     assert 'AI 永久解析' in modal
-    assert '/api/coach/chat' in coach
+    assert 'GlobalAiDrawer' in app
+    assert '/api/coach/chat' in global_ai
+    assert '附带当前页面内容' in global_ai
+    assert '/api/ai-formulas' in global_ai
+    assert "response_mode:'structured'" in global_ai
