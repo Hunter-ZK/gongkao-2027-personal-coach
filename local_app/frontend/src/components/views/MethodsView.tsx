@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState} from 'react';
-import {BookOpen,ChevronRight,Compass,Search,Route,ShieldAlert,Lightbulb,Menu,X,FileText,Play,Copy} from 'lucide-react';
+import {BookOpen,ChevronRight,Compass,Search,Route,ShieldAlert,Lightbulb,Menu,X,FileText,Play} from 'lucide-react';
 import {useApp} from '../../context/AppContext';
 import {CopyButton} from '../common/CopyButton';
 import {formatMethodText} from '../../utils/copy';
