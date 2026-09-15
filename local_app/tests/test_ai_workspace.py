@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 
+import routers.coach as coach
 from main import app
 from routers.coach import ChatIn, ChatMessage, STRUCTURED_RESPONSE_GUIDE, _retrieval_query
-
 
 client = TestClient(app)
 
@@ -30,6 +30,30 @@ def test_skill_retrieval_query_uses_multi_turn_history_and_page_context():
     assert '两期比重怎么判断' in query
     assert '为什么不能直接算' in query
     assert '资料分析知识库' in query
+
+
+def test_ai_config_test_uses_draft_key_without_exposing_it(monkeypatch):
+    seen = {}
+
+    def fake_request(payload, api_key):
+        seen['payload'] = payload
+        seen['key'] = api_key
+        return 'OK'
+
+    monkeypatch.setattr(coach, '_request_text', fake_request)
+    response = client.post('/api/coach/config/test', json={
+        'api_key': 'sk-draft-not-persisted',
+        'model': 'deepseek-flash',
+        'thinking': True,
+    })
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['ok'] is True
+    assert body['model'] == 'deepseek-flash'
+    assert body['thinking'] is True
+    assert 'sk-draft-not-persisted' not in response.text
+    assert seen['key'] == 'sk-draft-not-persisted'
+    assert seen['payload']['thinking']['type'] == 'enabled'
 
 
 def test_ai_formula_crud_persists_structured_answer():

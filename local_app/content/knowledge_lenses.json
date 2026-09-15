@@ -1,0 +1,300 @@
+{
+  "version": "2026-09-15-skill-lens-v1",
+  "evidence_policy": "本文件把已审阅 GitHub Skill 转成按考点可调用的二级教学视角。不得表述为老师本人逐字原话；正式知识、真实题面和一手材料优先。",
+  "nodes": {
+    "data-abrx-base": {
+      "positioning": "先把资料题翻译成 A现期、B基期、R增长率、X增长量，再决定是否真的需要计算。ABRX 是定位语言，不是要求每题套全公式。",
+      "priority": ["先判断题目给了哪两个量、问哪个量", "把时间、对象、单位和增长口径钉死", "公式只负责关系，考场速度仍取决于选项和速算"],
+      "exam_route": ["圈时期和对象", "落到 A/B/R/X", "先扫选项差距", "选直接读数、定性、速算或精算", "唯一选项稳定后停止"],
+      "avoid": ["见增长率就机械套公式", "对象和时期没定位就开始算", "算出精确值后才看选项"],
+      "training": ["每题先口述一句：已知谁、求谁", "复盘记录最早哪一步其实已经能排选项"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "把资料分析先统一进 ABRX 四量关系，再接截位直除、415份数等具体方法；重点是建立统一调用入口。", "source": "WangJunqing-coder/huasheng13-skill · references/ziliao-fenxi.md", "evidence": "secondary"},
+        {"label": "小P资料分析（二级整理）", "focus": "ABRX 只完成题意翻译，真正动笔前还要先扫选项、先定性、选最低成本算法，并给估算设置误差护栏。", "source": "Suny0u17g/xiaop-data-analysis-skill · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "data-two-period-proportion": {
+      "positioning": "两期比重先判升降，再决定要不要算百分点。多数题先比较部分增速和整体增速就能砍掉一半选项。",
+      "priority": ["部分增速 > 整体增速则比重上升，反之下降", "问百分点才进入差值计算", "选项拉开时优先标杆法或近似，不做两次长除法"],
+      "exam_route": ["识别部分/整体", "比较两者增速判方向", "扫选项方向和幅度", "只精修决定答案的一步"],
+      "avoid": ["把百分点写成百分比", "没判方向就直接算两期比重", "选项很散仍做完整长除"],
+      "training": ["先做只判升降的口头训练", "把每题标记为‘方向已够’或‘必须算幅度’"],
+      "lenses": [
+        {"label": "小P资料分析（二级整理）", "focus": "两期比重差若选项只考方向或幅度差得远，先用增速定性；能用共同标杆判断时，不默认做两次完整除法。", "source": "Suny0u17g/xiaop-data-analysis-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "花生十三体系（二级整理）", "focus": "用部分增速与整体增速先判断比重升降，再在需要时调用基期比重/比重差公式。", "source": "WangJunqing-coder/huasheng13-skill · references/ziliao-fenxi.md", "evidence": "secondary"}
+      ]
+    },
+    "data-truncated-division": {
+      "positioning": "截位直除不是固定截两位，而是由候选差距反推需要的精度；核心是‘够区分就停’。",
+      "priority": ["先看选项前几位差距", "分母截位是主操作，分子尽量少损失精度", "卡两个选项时只补关键一位，不整题重算"],
+      "exam_route": ["扫选项差距", "决定截2/3/4位", "估算方向", "直接除", "临界时补一位"],
+      "avoid": ["无脑统一截两位", "连续多次同向舍入却不检查误差", "已经唯一仍继续精算"],
+      "training": ["训练时先写‘选项差距→需要几位’再算", "复盘统计因为精度过高浪费的时间"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "截几位由选项首位/第二位差异决定；分母首位较小时通常要更谨慎，避免截位误差被放大。", "source": "WangJunqing-coder/huasheng13-skill · references/ziliao-fenxi.md", "evidence": "secondary"},
+        {"label": "小P资料分析（二级整理）", "focus": "候选差距决定够用精度；误差可能跨选项才升级精度，唯一选项稳定就停止计算。", "source": "Suny0u17g/xiaop-data-analysis-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "红领巾决策视角（二级整理）", "focus": "把精度视为决策成本：误差不改变候选排序就不追加计算，可能改变排序才升级。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "data-growth-speed-calc": {
+      "positioning": "增长率、增长量题的第一判断不是公式，而是题目到底问‘快’还是‘多’，以及现期量与增速能否先定性比较。",
+      "priority": ["增长最多看增长量，增长最快看增长率", "现期大且增速大时增长量可直接定性", "已知现期+增速求增长量时优先份数/分数思路"],
+      "exam_route": ["辨问法", "先定性", "判断能否用‘大大则大’", "必要时用份数或公式", "检查正负和下降口径"],
+      "avoid": ["把增长率比较当增长量比较", "下降率符号处理错误", "每个对象都完整算增长量"],
+      "training": ["成组训练先只做定性排序", "记录哪一组本可不算却全算了"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "增长量可用 415 份数法，把基期:增长量:现期视为 100:R:(100+R)，避免先乘再除的重计算。", "source": "WangJunqing-coder/huasheng13-skill · references/ziliao-fenxi.md", "evidence": "secondary"},
+        {"label": "小P资料分析（二级整理）", "focus": "增长量比较先用方向、量级和‘现期大且增速大’排除；只有交叉强弱时再算。", "source": "Suny0u17g/xiaop-data-analysis-skill · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "data-average-multiple-mixed": {
+      "positioning": "平均数、倍数、混合增长的高频失分不在公式本身，而在分子分母增速关系、权重时期和‘是几倍/多几倍’表述。",
+      "priority": ["平均数升降先比分子与分母增速", "混合值必在分项之间并偏向权重大者", "倍数题先区分‘是n倍’与‘多n倍’"],
+      "exam_route": ["先判断方向/区间", "扫选项是否已唯一", "需要时再做权重或比值修正", "复核表述单位"],
+      "avoid": ["混合增速直接算术平均", "用现期权重精确代替基期权重", "倍数与多几倍混淆"],
+      "training": ["先做不计算只判区间的混合题", "每道倍数题强制口述‘A是B的…’"],
+      "lenses": [
+        {"label": "小P资料分析（二级整理）", "focus": "两项混合增长优先‘区间 + 靠近谁 + 粗权重’，能锁定唯一选项就禁止继续还原两个精确基期。", "source": "Suny0u17g/xiaop-data-analysis-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "花生十三体系（二级整理）", "focus": "平均数、比重、倍数都可放回分子/分母与增长率关系中统一理解，减少孤立背公式。", "source": "WangJunqing-coder/huasheng13-skill · references/ziliao-fenxi.md", "evidence": "secondary"}
+      ]
+    },
+    "data-group-rhythm": {
+      "positioning": "整组资料的目标是稳定拿分，不是每题都展示完整计算。先易后难、先读问法和选项，单题卡住要立刻切换入口或后置。",
+      "priority": ["一组题先快速浏览问法和材料结构", "直接读数/定性题先收割", "卡题设置降级路径和停止条件"],
+      "exam_route": ["浏览5个问法", "标直接题/计算题/综合题", "先做低成本高确定题", "卡住换入口或跳", "最后处理综合判断"],
+      "avoid": ["按题号机械顺序硬刚", "第一题卡住拖死整组", "综合题四个选项都完整计算"],
+      "training": ["按整组记录每题开始和结束时间", "复盘只留1–2条可验证节奏规则"],
+      "lenses": [
+        {"label": "红领巾决策视角（二级整理）", "focus": "先找最便宜的强线索；技巧连续卡住就换入口、借选项、退回基础法，仍超预算则跳。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"},
+        {"label": "小P资料分析（二级整理）", "focus": "每题都执行‘翻译题干→扫选项→定性→最低成本算法→误差护栏→复核坑位’，而不是先算后看答案。", "source": "Suny0u17g/xiaop-data-analysis-skill · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "logic-translation": {
+      "positioning": "翻译推理要把自然语言压成固定逻辑关系，重点不是背符号，而是避免把充分条件、必要条件和逆否关系翻反。",
+      "priority": ["先识别如果/只有/除非等触发词", "只保留可靠等价与逆否，不做无效逆命题", "选项逐一代回结构验证"],
+      "exam_route": ["标条件词", "写最短逻辑式", "做逆否/等价变形", "匹配选项", "遇复杂关系回原句核验"],
+      "avoid": ["肯后推肯前", "否前推否后", "只有A才B翻译方向反了"],
+      "training": ["只练句子翻译，不急着做整题", "错题记录是‘哪个连接词翻反’而不是泛写逻辑差"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "判断推理先做题型识别，再调用翻译规则；条件关系要通过逆否等价稳定落地。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "红领巾决策视角（二级整理）", "focus": "先抓能最大幅度缩小候选空间的硬约束，不要在每个句子上平均用力。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "logic-strengthen-premise": {
+      "positioning": "加强/前提题的核心是找论据到结论之间缺的那一块，不是找‘和题干有关’的选项。",
+      "priority": ["先拆论据与结论", "问自己结论成立还缺什么桥", "前提题优先做否定代入检查必要性"],
+      "exam_route": ["圈结论", "圈主要论据", "写缺口", "比较选项谁最直接补缺口", "前提题必要时否定代入"],
+      "avoid": ["把背景相关当加强", "只增强论据真实性却不碰推理缺口", "前提题选了充分但非必要条件"],
+      "training": ["每题先用一句话写‘因为…所以…缺…’", "复盘比较正确项与次强项究竟差在哪个链路"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "加强削弱应落到论证结构：论据、结论、二者联系；选项价值取决于是否直接作用于推理链。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "红领巾决策视角（二级整理）", "focus": "比较候选时先找最便宜的强线索；不是证明正确项绝对完美，而是比较谁更直接改变结论可信度。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "logic-weaken": {
+      "positioning": "削弱题先找到推理链的薄弱处，再判断选项是拆因果、给他因、否定前提还是说明样本/机制不足。",
+      "priority": ["先分清论据和结论", "优先攻击二者之间的关系", "比较削弱力度而非只判断是否负面"],
+      "exam_route": ["提炼论证", "找缺口", "给选项分攻击位置", "比较直接性和力度", "排除只谈背景的弱相关项"],
+      "avoid": ["看到反面事实就选", "削弱论据但结论仍独立成立", "把无关信息当他因"],
+      "training": ["给每个选项标‘打论据/打联系/打结论/无关’", "错题保留次强项为何弱一档"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "削弱与加强都从论证结构出发，不以情绪色彩判断强弱。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "logic-analytical-reasoning": {
+      "positioning": "分析推理的关键是把文字约束外化成表格、位置或分组，不要把全部条件放在脑中。先用最硬约束减少分支。",
+      "priority": ["先找唯一、互斥、包含等硬条件", "选择列表/位置图/分组框架", "能代选项时不必完整枚举所有解"],
+      "exam_route": ["提取对象", "标硬约束", "画最小结构", "优先落确定信息", "必要时假设或代选项"],
+      "avoid": ["全靠脑内记条件", "从弱条件开始大量分支", "为求完整排列而枚举无关情况"],
+      "training": ["限定草稿格式，强制一题一种结构图", "记录哪条条件是最早的强约束"],
+      "lenses": [
+        {"label": "红领巾决策视角（二级整理）", "focus": "先硬筛，再优化；先用能最大幅度压缩候选空间的条件，而不是按题干顺序平均处理。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"},
+        {"label": "花生十三体系（二级整理）", "focus": "分析推理在题型识别后选择列表、假设、排除等结构化工具，目标是减少无效分支。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "logic-true-false-set": {
+      "positioning": "真假与集合题优先找矛盾对、包含关系和必真必假，不要逐句猜人物说真话还是假话。",
+      "priority": ["先找互为矛盾的命题", "利用一真一假等数量约束", "集合关系用图示或最小反例检查"],
+      "exam_route": ["翻译命题", "找矛盾/反对关系", "套数量约束", "推出其余命题", "选项回验"],
+      "avoid": ["把反对当矛盾", "忽略有些/所有量词", "一开始逐人假设造成分支爆炸"],
+      "training": ["专练矛盾关系识别", "集合题用反例而不是只凭直觉"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "真假推理和翻译推理共享形式逻辑底座，先把自然语言变成可检验命题，再利用矛盾关系。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "logic-explain-evaluate": {
+      "positioning": "解释题要补上看似矛盾的两件事如何同时成立；评价题要判断某条件是否真的能检验论证，而不是选一个听起来重要的事实。",
+      "priority": ["解释题先写清表面冲突", "寻找能同时兼容两边的新条件", "评价题用正反答案是否会改变结论来检验"],
+      "exam_route": ["明确问法", "提炼冲突/论证", "逐项看是否正中机制", "排除只解释一边的选项"],
+      "avoid": ["解释题去否定题干事实", "评价题选普通相关信息", "把补充背景当解释机制"],
+      "training": ["解释题先口述‘A发生且B也发生，因为…’", "评价题尝试把选项回答成是/否各一次"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "解释评价题仍要围绕题目结构，不把‘相关’误当‘有效’；用机制与论证作用位置判断选项。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "analogy-secondary-discrimination": {
+      "positioning": "类比先找一级关系，选项撞车后再做二级辨析；不要一上来追求最细、最玄的关系。",
+      "priority": ["先判种属/组成/功能/因果/对应等一级关系", "多个选项都成立再比较词性、顺序、必然性、主体一致", "三词题必须同时解释两段关系"],
+      "exam_route": ["横向定一级关系", "用选项快速筛", "剩余项做二级辨析", "三词关系整体回验"],
+      "avoid": ["自己创造冷门关系", "只解释题干不验证选项", "把常识偶然关联当必然关系"],
+      "training": ["错题积累的是‘二级区分点’而非整道题", "同一关系做成正反例对照"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "类比关系需要层级化：先稳定识别逻辑/言语/经验关系，再用更细属性完成二级辨析。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "definition-key-elements": {
+      "positioning": "定义判断以题干给的定义为唯一规则，把主体、客体、目的、条件、方式、结果拆成硬要件，再逐项匹配。",
+      "priority": ["先判断问符合还是不符合", "提取不可缺的硬要件", "选项只要违反一个硬要件即可排除"],
+      "exam_route": ["圈定义主体", "圈条件/方式/目的", "标必要要件", "逐项硬匹配", "边界模糊再比较最关键要件"],
+      "avoid": ["用生活常识代替题干定义", "把所有修饰语都当同等重要", "抓住一个相似词就选"],
+      "training": ["把长定义压成3–5个要件", "错题记录漏掉的是哪个硬要件"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "定义判断走要素法：主体、客体、原因、目的、条件、方式等拆开硬匹配，以题干定义而不是个人常识为准。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "figure-retrieval-framework": {
+      "positioning": "图推要建立固定检索顺序，但检索不是把所有规律都试一遍；先看最显眼的整体特征，再沿位置、样式、数量、属性等主线快速验证。",
+      "priority": ["先整体后局部", "一个规律至少验证多个图", "规律解释困难就切换主线，不在同一路径硬补丁"],
+      "exam_route": ["看整体相似/变化", "位置", "样式", "数量", "属性", "特殊结构/立体"],
+      "avoid": ["看到一个点就开始数到底", "只验证前两个图", "为了吻合而不断加例外规则"],
+      "training": ["记录首次命中规律所属主线", "超时题标记自己在哪条检索线上滞留"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "图形推理按规律体系做检索：位置、样式、数量、属性，再进入分组与立体，不靠随机灵感。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "红领巾决策视角（二级整理）", "focus": "技巧连续卡住必须换入口；若多条检索线都需要强行补丁，应止损而非无限加时。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "figure-solid-reconstruction": {
+      "positioning": "六面体与空间重构优先用相对面、相邻面、公共边/公共点等稳定约束排除，不必真的在脑中把整个立方体旋起来。",
+      "priority": ["先找相对面", "再看相邻关系和公共边", "选项能用局部关系排除就不做完整折叠"],
+      "exam_route": ["标面编号", "确定相对/相邻", "选一个稳定局部关系", "逐项排除", "必要时画最小草图"],
+      "avoid": ["纯靠空间想象旋转", "忽略公共边方向", "一个关系排不掉仍反复想同一视角"],
+      "training": ["专项训练相对面与公共边", "每道题只记录真正起排除作用的关系"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "立体图形属于图推专项，应依赖可验证的相对/相邻关系与排除法，而不是把空间想象当唯一能力。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "verbal-central-idea": {
+      "positioning": "中心理解不是机械找首尾句，而是看文段结构：谁是主题、作者把篇幅和逻辑落在哪、转折/因果/总分关系如何收束。",
+      "priority": ["先锁主题对象", "用关联词和结构找重点句", "选项比较主题范围与作者态度，不追求字面复述"],
+      "exam_route": ["读首句定主题", "标转折/因果/并列", "找重点句", "压成一句主旨", "选项做范围和偷换核验"],
+      "avoid": ["只看尾句", "选背景或例子", "选项主题扩大/缩小"],
+      "training": ["每段压成15字以内主旨", "错题记录选项是‘偏题/过宽/过窄/无中生有’哪类"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "片段阅读依赖中心句识别、关联关系和选项替换验证，结构优先于逐句平均理解。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "红领巾决策视角（二级整理）", "focus": "比较选项时先用能大幅缩小候选的强线索，如主题是否一致、范围是否越界，再做细微措辞比较。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "verbal-logical-fill": {
+      "positioning": "逻辑填空先找语境约束，再辨词；真正的提速点是先做区分度最高、线索最硬的空，而不是按第一个空机械开始。",
+      "priority": ["先判转折/递进/并列/解释等关系", "找搭配对象和感情色彩", "多个空时先做约束更强的空再回推"],
+      "exam_route": ["通读定语境", "找硬线索", "先解区分度高的空", "辨析词义侧重/搭配", "整体代回"],
+      "avoid": ["凭语感直接选", "只查词义不看搭配", "一空卡死不切第二空"],
+      "training": ["每题标出决定答案的语境词", "建立近义词差异而非只记词典释义"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "逻辑填空用语境分析、词义辨析、关联词和固定搭配形成证据链，再整体代入。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "红领巾决策视角（二级整理）", "focus": "先找最便宜的强线索；多空题可先解区分度更高的一空，再反推其他空，避免在弱线索上耗时。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "verbal-intention-title": {
+      "positioning": "意图、标题、细节不是三套完全独立的方法：都先基于主旨，但意图多问作者下一层目的，标题强调主题+概括，细节要求逐项回原文。",
+      "priority": ["先辨问法，不混用题型标准", "意图题不能脱离主旨过度拔高", "标题兼顾核心主题与覆盖范围", "细节题专查偷换、绝对化、时态与范围"],
+      "exam_route": ["辨题型", "提炼主旨", "按题型附加条件", "选项逐项核验"],
+      "avoid": ["意图题无限升华", "标题选局部亮点", "细节题凭印象不回原文"],
+      "training": ["同一文段分别写主旨/意图/标题", "细节错项按偷换类型归档"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "中心理解是底座，再根据意图、标题、细节等具体问法切换选项标准。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "verbal-sentence-order": {
+      "positioning": "排序题不是完整排出六句话再找选项，而是用首句禁忌、指代、关联词配对、时间/逻辑顺序不断缩小候选。",
+      "priority": ["先看选项提供的首句候选", "利用指代词和关联词配对", "优先验证能一刀排掉多项的局部顺序"],
+      "exam_route": ["看选项首句", "找绑定句", "找时间/因果链", "用局部顺序排选项", "最后通读"],
+      "avoid": ["脱离选项从零排序", "代词句作无来源首句", "只凭语感判断衔接"],
+      "training": ["专项练首句和绑定句", "复盘哪一对句子是最强约束"],
+      "lenses": [
+        {"label": "花生十三体系（二级整理）", "focus": "语句排序与衔接依赖关联、指代和话题一致性，选项本身也是重要信息。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "红领巾决策视角（二级整理）", "focus": "优先寻找能最大幅度压缩候选空间的句间硬关系，而不是尝试构造完整顺序。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "verbal-idiom-word": {
+      "positioning": "成语和实词的有效积累不是背长释义，而是记‘语义侧重 + 搭配对象 + 感情色彩 + 易混对手’。",
+      "priority": ["放回语境判断感情色彩和逻辑关系", "比较近义词真正的差异维度", "积累固定搭配和适用对象"],
+      "exam_route": ["先语境", "再搭配", "再词义侧重", "最后整体代回"],
+      "avoid": ["望文生义", "只记正确定义不记易混词", "脱离语境背成语"],
+      "training": ["词语本按易混组而非字母表记录", "每组至少写一个正确搭配和一个反例"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "逻辑填空提分来自语境和词义辨析共同约束；词语积累应服务于选项比较而非孤立背诵。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "quant-value-judgment": {
+      "positioning": "数量关系首先是资源配置题：不是判断‘会不会’，而是判断‘现在值不值得做’，建立个人必做池、观察池和后置池。",
+      "priority": ["十秒识别母题和完整解法大致步骤", "选项可直接代入时提高题目价值", "用个人真实正确率与可靠用时决定题池"],
+      "exam_route": ["识别母题", "估步骤和分支", "看选项可否利用", "做/后置/跳", "计算膨胀时二次止损"],
+      "avoid": ["会做就一定做", "因为已经算了一分钟继续沉没", "照搬别人固定答题顺序"],
+      "training": ["整卷记录‘本可跳但硬做’和‘本可做却误跳’", "题池升级必须有多次真实样本"],
+      "lenses": [
+        {"label": "红领巾决策视角（二级整理）", "focus": "高耗时低突破率题先跳；技巧卡住就降级；个人策略必须结合正确率、用时和剩余时间。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"},
+        {"label": "花生十三体系（二级整理）", "focus": "数量关系以特殊值、比例、方程、代入排除等方法处理高频母题，考场重点是挑会做、短链路的题。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "quant-substitution-properties": {
+      "positioning": "代入排除的本质是把‘求未知量’改成‘验证候选值’，先用整除、奇偶、尾数、范围和单调性批量筛选。",
+      "priority": ["先提硬约束，不从A机械试到D", "剩两项时选最好算或中间项验证", "必要条件只能排错，不能直接证明正确"],
+      "exam_route": ["提范围/整除/奇偶", "批量排除", "利用单调性", "代一个关键选项", "唯一后停止"],
+      "avoid": ["四项逐个代", "把弱特性当充分条件", "代入成本已高于直接列式仍坚持"],
+      "training": ["每题先列可用数字特性", "记录哪一个特性真正砍掉最多选项"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "数量关系常用代入排除与数字特性，把求解问题转成候选验证，减少方程和分支。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "quant-engineering-travel": {
+      "positioning": "工程、行程、利润、浓度先识别不变量和比例结构，能赋值就赋值、能比例就比例，不默认一上来设很多未知数。",
+      "priority": ["工程抓总量=效率×时间", "行程抓路程=速度×时间及相遇追及关系", "利润抓成本/售价/利润率基准", "浓度抓溶质守恒"],
+      "exam_route": ["找不变量", "判断赋值/比例/方程谁最短", "写最少关系式", "选项可代则代", "检查单位"],
+      "avoid": ["所有题都用方程", "赋值后忘记比例尺度", "行程方向和相对速度搞反"],
+      "training": ["同一母题分别做方程解与考场短解", "统计哪类题已进入个人必做池"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "工程/行程/利润等母题优先特殊值、比例、方程和代入排除四类工具，选步骤最少且稳定的路线。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "quant-permutation-probability": {
+      "positioning": "排列组合先判断是分类还是分步，再处理相邻、不相邻、至少/至多等限制；概率题先把样本空间口径统一。",
+      "priority": ["分类用加法，分步用乘法", "相邻优先捆绑，不相邻优先插空", "复杂限制先看是否能用反面或补集"],
+      "exam_route": ["辨对象是否有序", "分类/分步", "处理限制", "必要时补集", "概率=有效/总数"],
+      "avoid": ["重复计数", "分类不互斥", "分步漏步骤", "样本空间前后口径不一致"],
+      "training": ["每题先写‘有序/无序、分类/分步’", "错题专记重复或遗漏发生在哪一步"],
+      "lenses": [{"label": "花生十三体系（二级整理）", "focus": "排列组合与概率作为数量高频母题，先判断结构再用捆绑、插空、分类分步等稳定工具。", "source": "WangJunqing-coder/huasheng13-skill · SKILL.md", "evidence": "secondary"}]
+    },
+    "quant-number-sequence": {
+      "positioning": "数字推理的核心是检索顺序与止损：差、倍、幂、分组、递推按低成本顺序验证，不做无限试错。",
+      "priority": ["先看相邻差/商", "数字靠近平方立方时查幂次", "奇偶位置明显时及时分组", "两条主线都需强补丁就止损"],
+      "exam_route": ["量级与增减", "差", "倍", "幂", "分组/递推", "止损"],
+      "avoid": ["只验证两项", "构造复杂规律解释偶然巧合", "一道题试十种方法"],
+      "training": ["记录首次命中规律的秒数", "恢复期固定五条主线，不临时发明大量新规则"],
+      "lenses": [{"label": "红领巾决策视角（二级整理）", "focus": "技巧卡住后要有明确降级和退出条件；高耗时低突破率时保全后续题。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"}]
+    },
+    "science-force-circuit": {
+      "positioning": "科学推理先把题目还原为受力、能量、压强浮力或电路连接等基础模型，不靠生活直觉猜。",
+      "priority": ["画受力或电路最小图", "明确研究对象和状态变化", "用定性规律先排选项，再进入计算"],
+      "exam_route": ["定研究对象", "建最小模型", "判方向/状态", "必要时算", "检查单位和边界"],
+      "avoid": ["凭经验想当然", "对象切换后仍沿用旧受力图", "串并联关系识别错误"],
+      "training": ["受力题先画图再看选项", "电路题专项练等效连接与变化方向"],
+      "lenses": [{"label": "通用考公 Skill（二级整理）", "focus": "现有四个重点 GitHub Skill 对广东科学推理覆盖较弱，本节点以本地正式内容和基础物理模型为主，不强行套老师归属。", "source": "KeWang0622/kaogong-skill · 行测通用框架", "evidence": "secondary-boundary"}]
+    },
+    "politics-core-expressions": {
+      "positioning": "政治理论重在准确表述、概念边界和最新官方口径。老师技巧只能帮助筛选，不能替代当年权威文件。",
+      "priority": ["核心概念按官方表述记忆", "绝对化和偷换主体要警惕", "涉及最新会议和政策必须核验时效"],
+      "exam_route": ["识别考查主题", "回忆官方核心表述", "逐项查主体/范围/程度", "时效事实不确定就标记"],
+      "avoid": ["用模糊印象补政策原文", "把二手口诀当官方表述", "忽略年份变化"],
+      "training": ["错题按表述差异建对照", "时政只保留来源和日期明确的事实"],
+      "lenses": [
+        {"label": "通用考公 Skill（二级整理）", "focus": "制度、政策、评分和时效事实要分官方/权威媒体/行业整理，不确定就明确核验。", "source": "KeWang0622/kaogong-skill · SKILL.md", "evidence": "secondary"},
+        {"label": "红领巾决策视角（二级整理）", "focus": "把不确定性分成已知、结构推断、模糊印象和纯蒙；政策类错误成本高，不能用粗估替代核验。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "common-sense-rolling": {
+      "positioning": "常识不适合建立无限知识库，重点是低成本滚动积累、选项排除和不确定性管理；高频错点比冷门百科更值得复盘。",
+      "priority": ["政治法律科技等可结构化部分优先", "不会时用确定事实和选项冲突排除", "纯蒙与模糊印象必须分开记录"],
+      "exam_route": ["先判领域", "找确定知识", "排明显冲突", "标把握度", "不过度纠结"],
+      "avoid": ["为一道冷门题扩展大量无关百科", "把一次蒙对当掌握", "时政用旧印象"],
+      "training": ["每天短时滚动，不挤占高ROI模块", "错题只沉淀可迁移知识点和来源"],
+      "lenses": [
+        {"label": "红领巾决策视角（二级整理）", "focus": "不确定性要分层，只有会改变行动的信息才值得继续展开；常识纯蒙不伪装成知识掌握。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"},
+        {"label": "通用考公 Skill（二级整理）", "focus": "常识以积累为主，时效政策回到官方来源；模拟或行业整理不能冒充官方口径。", "source": "KeWang0622/kaogong-skill · SKILL.md", "evidence": "secondary"}
+      ]
+    },
+    "gd-multiple-choice-strategy": {
+      "positioning": "广东多选策略的重点是风险控制：先确认当年题型与计分规则，再决定是否采用排除、保守选择或全选策略，不能把往年经验固化成永恒规则。",
+      "priority": ["当年官方题型/计分规则优先", "每个选项独立核验，不因已选两项就停止", "把确定项、可推项、模糊项分层"],
+      "exam_route": ["确认问法", "逐项判断", "标把握度", "根据规则决定提交策略", "不确定规则时不做经验性冒险"],
+      "avoid": ["沿用旧年份规则", "用‘通常有几个答案’猜", "把模糊项当确定项"],
+      "training": ["多选题复盘保留每个选项的判断证据", "把策略错误和知识错误分开"],
+      "lenses": [
+        {"label": "红领巾决策视角（二级整理）", "focus": "先核验硬规则，再做风险决策；不确定性分层，不用模糊印象替代高风险事实。", "source": "tyf152119-web/wangyou-honglingjin-perspective · SKILL.md", "evidence": "secondary"},
+        {"label": "通用考公 Skill（二级整理）", "focus": "逐年变化的考试规则必须以当年官方公告和实卷为准，行业经验只能作参考。", "source": "KeWang0622/kaogong-skill · SKILL.md", "evidence": "secondary"}
+      ]
+    }
+  }
+}

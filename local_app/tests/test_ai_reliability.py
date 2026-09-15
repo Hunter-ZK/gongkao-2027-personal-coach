@@ -1,6 +1,7 @@
 import pytest
 
-from services.mistake_ai import _parse_deepseek_json
+import services.mistake_ai as ai
+from services.mistake_ai import DeepSeekEmptyContent, _call_deepseek, _parse_deepseek_json
 
 
 def test_deepseek_json_parser_accepts_fenced_and_prefixed_json():
@@ -24,3 +25,38 @@ def test_deepseek_json_parser_unwraps_nested_result_and_string_json():
 def test_deepseek_json_parser_rejects_non_json_content():
     with pytest.raises(RuntimeError, match='无法解析为 JSON'):
         _parse_deepseek_json('这是一段完全没有结构化对象的回答。')
+
+
+def test_empty_json_output_automatically_retries_without_thinking(monkeypatch):
+    monkeypatch.setattr(ai, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-flash', 'thinking': True})
+    calls = []
+
+    def fake_request(payload, api_key):
+        calls.append(payload)
+        if len(calls) == 1:
+            raise DeepSeekEmptyContent('empty')
+        return '{"standard_solution_md":"第二次返回正常","fastest_solution_md":null,"key_points":[]}'
+
+    monkeypatch.setattr(ai, '_request_json', fake_request)
+    result = _call_deepseek('system', '请返回 json')
+    assert result['standard_solution_md'] == '第二次返回正常'
+    assert len(calls) == 2
+    assert calls[0]['thinking']['type'] == 'enabled'
+    assert calls[1]['thinking']['type'] == 'disabled'
+
+
+def test_json_output_can_fall_back_to_plain_completion(monkeypatch):
+    monkeypatch.setattr(ai, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-flash', 'thinking': False})
+    calls = []
+
+    def fake_request(payload, api_key):
+        calls.append(payload)
+        if len(calls) <= 2:
+            raise DeepSeekEmptyContent('empty')
+        assert 'response_format' not in payload
+        return '{"standard_solution_md":"普通模式恢复","key_points":["选项"]}'
+
+    monkeypatch.setattr(ai, '_request_json', fake_request)
+    result = _call_deepseek('system', 'json please')
+    assert result['standard_solution_md'] == '普通模式恢复'
+    assert len(calls) == 3

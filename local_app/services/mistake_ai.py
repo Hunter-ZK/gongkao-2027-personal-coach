@@ -7,7 +7,7 @@ import urllib.request
 from typing import Any
 
 from db import jdump, jload, now_iso, query, query_one, transaction
-from services.gongkao_skill import ALLOWED_MODELS, build_system_prompt, load_secret_config
+from services.gongkao_skill import CURRENT_MODEL, build_system_prompt, load_secret_config, normalize_model
 
 CAUSES = [
     '审题错误', '主体错误', '时间错误', '单位错误', '题型识别错误', '方法选择错误',
@@ -16,6 +16,10 @@ CAUSES = [
 ]
 DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
 AI_MARKER = 'AI 初步分析（错因需人工确认）'
+
+
+class DeepSeekEmptyContent(RuntimeError):
+    pass
 
 
 def configured() -> bool:
@@ -108,6 +112,17 @@ def _parse_deepseek_json(text: str) -> dict[str, Any]:
     raise RuntimeError('DeepSeek 返回内容无法解析为 JSON')
 
 
+def _http_error_message(exc: urllib.error.HTTPError) -> str:
+    detail = exc.read().decode('utf-8', errors='replace')[:1000]
+    if exc.code == 401:
+        return 'DeepSeek API Key 无效或已失效。'
+    if exc.code == 402:
+        return 'DeepSeek 账户余额不足或计费状态异常。'
+    if exc.code == 429:
+        return 'DeepSeek 请求过多，请稍后重试。'
+    return f'DeepSeek API 返回 {exc.code}: {detail}'
+
+
 def _request_json(payload: dict[str, Any], api_key: str) -> str:
     request = urllib.request.Request(
         DEEPSEEK_URL,
@@ -123,8 +138,7 @@ def _request_json(payload: dict[str, Any], api_key: str) -> str:
         with urllib.request.urlopen(request, timeout=90) as response:
             body = json.loads(response.read().decode('utf-8', errors='replace'))
     except urllib.error.HTTPError as exc:
-        detail = exc.read().decode('utf-8', errors='replace')[:800]
-        raise RuntimeError(f'DeepSeek API 返回 {exc.code}: {detail}') from exc
+        raise RuntimeError(_http_error_message(exc)) from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f'无法连接 DeepSeek API: {exc.reason}') from exc
     choices = body.get('choices') or []
@@ -135,53 +149,84 @@ def _request_json(payload: dict[str, Any], api_key: str) -> str:
     if isinstance(content, (dict, list)):
         return json.dumps(content, ensure_ascii=False)
     text = str(content or '').strip()
+    # reasoning_content is private reasoning, not the final answer. Never parse or expose it as user content.
     if not text:
-        text = str(message.get('reasoning_content') or '').strip()
-    if not text:
-        raise RuntimeError('DeepSeek 返回内容为空')
+        raise DeepSeekEmptyContent('DeepSeek 返回的 final content 为空')
     return text
 
 
-def _call_deepseek(system_prompt: str, user_prompt: str) -> dict[str, Any]:
-    cfg = load_secret_config()
-    if not cfg.get('api_key'):
-        raise RuntimeError('DeepSeek API Key 未配置')
-    model = cfg.get('model') if cfg.get('model') in ALLOWED_MODELS else 'deepseek-v4-flash'
-    payload = {
+def _json_payload(model: str, system_prompt: str, user_prompt: str, *, thinking: bool, response_format: bool = True) -> dict[str, Any]:
+    payload: dict[str, Any] = {
         'model': model,
         'messages': [
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': user_prompt},
         ],
-        'thinking': {'type': 'enabled' if cfg.get('thinking') else 'disabled'},
+        'thinking': {'type': 'enabled' if thinking else 'disabled'},
         'stream': False,
-        'max_tokens': 2600,
-        'response_format': {'type': 'json_object'},
+        'max_tokens': 2800,
     }
-    raw = _request_json(payload, str(cfg['api_key']))
-    try:
-        return _parse_deepseek_json(raw)
-    except RuntimeError as first_error:
-        repair_payload = {
-            'model': model,
-            'messages': [
-                {
-                    'role': 'system',
-                    'content': '你只负责把输入修复成合法 JSON 对象。不得解释、不得补充事实、不得使用 Markdown。保留原字段和原语义；缺失值用 null。',
-                },
-                {'role': 'user', 'content': raw[:16000]},
-            ],
-            'thinking': {'type': 'disabled'},
-            'stream': False,
-            'max_tokens': 2600,
-            'response_format': {'type': 'json_object'},
-        }
-        repaired = _request_json(repair_payload, str(cfg['api_key']))
+    if response_format:
+        payload['response_format'] = {'type': 'json_object'}
+    return payload
+
+
+def _call_deepseek(system_prompt: str, user_prompt: str) -> dict[str, Any]:
+    cfg = load_secret_config()
+    api_key = str(cfg.get('api_key') or '')
+    if not api_key:
+        raise RuntimeError('DeepSeek API Key 未配置')
+    model = normalize_model(str(cfg.get('model') or CURRENT_MODEL))
+    thinking = bool(cfg.get('thinking'))
+
+    strict_prompt = user_prompt.rstrip() + '\n\n必须返回一个合法 JSON object；不要返回空内容，不要返回 Markdown 代码块。'
+    errors: list[str] = []
+    raw_nonempty: str | None = None
+
+    attempts = [
+        _json_payload(model, system_prompt, strict_prompt, thinking=thinking, response_format=True),
+        _json_payload(model, system_prompt, strict_prompt + '\n这是重试：只输出 JSON。', thinking=False, response_format=True),
+    ]
+    for payload in attempts:
         try:
+            raw = _request_json(payload, api_key)
+            raw_nonempty = raw
+            return _parse_deepseek_json(raw)
+        except (DeepSeekEmptyContent, RuntimeError) as exc:
+            errors.append(str(exc))
+
+    # DeepSeek documents that JSON Output can occasionally return empty content. Final fallback removes
+    # response_format while keeping an explicit JSON-only contract, then parses the returned object ourselves.
+    fallback = _json_payload(
+        model,
+        system_prompt + '\n\n最终输出必须是一个 JSON 对象，禁止解释、禁止 Markdown。',
+        strict_prompt,
+        thinking=False,
+        response_format=False,
+    )
+    try:
+        raw = _request_json(fallback, api_key)
+        raw_nonempty = raw
+        return _parse_deepseek_json(raw)
+    except (DeepSeekEmptyContent, RuntimeError) as exc:
+        errors.append(str(exc))
+
+    if raw_nonempty:
+        repair_payload = _json_payload(
+            model,
+            '你只负责把输入修复成合法 JSON 对象。不得解释、不得补充事实、不得使用 Markdown。保留原字段和原语义；缺失值用 null。',
+            raw_nonempty[:16000],
+            thinking=False,
+            response_format=False,
+        )
+        try:
+            repaired = _request_json(repair_payload, api_key)
             return _parse_deepseek_json(repaired)
-        except RuntimeError as second_error:
-            preview = re.sub(r'\s+', ' ', raw)[:280]
-            raise RuntimeError(f'{first_error}；自动修复仍失败：{second_error}；返回预览：{preview}') from second_error
+        except (DeepSeekEmptyContent, RuntimeError) as exc:
+            errors.append(str(exc))
+
+    detail = '；'.join(dict.fromkeys(errors))[:700]
+    raise RuntimeError(f'DeepSeek 连续返回空内容或无效 JSON，自动重试/降级均失败。{detail}')
 
 
 def _valid_node_slugs(values: Any) -> list[str]:
@@ -207,7 +252,7 @@ def analyze_mistake(mistake_id: int, *, overwrite: bool = False) -> dict[str, An
     query_text = f"{item.get('module') or ''} {item.get('subtype') or ''} {item.get('stem_md') or ''} {option_text}"
     system_prompt, refs = build_system_prompt(query_text)
     source_titles = [ref.get('title') for ref in refs[:4] if ref.get('title')]
-    prompt = f"""请解析下面这道用户真实错题。你的分析必须优先服从系统提示里检索到的本地 Skill / V2 方法材料。
+    prompt = f"""请解析下面这道用户真实错题。优先服从系统提示里检索到的本地正式方法、知识节点和 Skill 讲法视角。
 
 题目模块：{item.get('module') or '未分类'}
 题型：{item.get('subtype') or '未分类'}
@@ -218,7 +263,7 @@ def analyze_mistake(mistake_id: int, *, overwrite: bool = False) -> dict[str, An
 正确答案：{item.get('correct_answer') or '未知'}
 当前知识节点：{item.get('node_slug') or '未绑定'}
 
-只返回 JSON，不要 Markdown 代码块。字段必须为：
+只返回 JSON object，字段必须为：
 {{
   "standard_solution_md": "稳定、可复现的主方法解法",
   "fastest_solution_md": "考场更快路径；没有可靠快解则为 null",
@@ -231,9 +276,9 @@ def analyze_mistake(mistake_id: int, *, overwrite: bool = False) -> dict[str, An
 
 要求：
 1. 不得因为答案错了就断言用户知识不会；错因只做建议。
-2. 标准解法必须写清识别信号、主方法和关键步骤。
-3. 快解必须写明适用边界，否则返回 null。
-4. 若本地材料不足以支撑老师归属，不写成老师本人明确观点。
+2. 标准解法写清识别信号、主方法、关键步骤。
+3. 快解写明适用边界，否则返回 null。
+4. GitHub Skill 是二级整理，不能冒充老师本人逐字观点。
 5. 不虚构题目没有提供的信息。
 """
     result = _call_deepseek(system_prompt, prompt)
@@ -247,10 +292,7 @@ def analyze_mistake(mistake_id: int, *, overwrite: bool = False) -> dict[str, An
         cause_note += f'\n建议错因：{suggested}（未写入正式错因）'
     cause_note += f'\n方法依据：{source_note}'
 
-    values: dict[str, Any] = {
-        'cause_note': cause_note,
-        'updated_at': now_iso(),
-    }
+    values: dict[str, Any] = {'cause_note': cause_note, 'updated_at': now_iso()}
     for field in ('standard_solution_md', 'trap'):
         value = str(result.get(field) or '').strip()
         if value and (overwrite or not item.get(field)):
