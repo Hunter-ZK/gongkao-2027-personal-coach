@@ -60,18 +60,19 @@ def test_react_timer_is_compact_global_control_not_a_page():
     assert "timer:'/timer'" not in context
 
 
-def test_react_knowledge_uses_recommendations_and_three_shape_reading():
+def test_react_knowledge_returns_to_gemini_split_layout_without_losing_v2():
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
-    assert '现在最值得看的笔记' in knowledge
+    assert 'max-w-7xl' in knowledge
+    assert 'lg:grid-cols-12' in knowledge
+    assert 'lg:col-span-4' in knowledge and 'lg:col-span-8' in knowledge
     assert '/api/v2/knowledge/recommendations' in knowledge
-    assert '浏览全部笔记' in knowledge
-    assert '唤醒层 · 30 秒' in knowledge
-    assert '方法层' in knowledge
-    assert '展开出处层' in knowledge
-    assert '按这个方法练 5 题' in knowledge
+    assert '/experience' in knowledge
+    assert '30 秒唤醒' in knowledge
+    assert '完整讲义 / 推导 / 历史出处' in knowledge
+    assert '练 5 题' in knowledge
     assert '+扩写' in knowledge
-    assert 'CARD ' not in knowledge
-    assert '内容地图' not in knowledge
+    assert '原始笔记模式' in knowledge
+    assert '<Markdown>{currentNode.content' in knowledge
 
 
 def test_react_method_library_has_directory_hierarchy_and_detail_pane():

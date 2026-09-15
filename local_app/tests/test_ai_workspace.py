@@ -49,12 +49,30 @@ def test_ai_config_test_uses_draft_key_without_exposing_it(monkeypatch):
     assert response.status_code == 200, response.text
     body = response.json()
     assert body['ok'] is True
-    assert body['model'] == 'deepseek-v4-flash'
+    assert body['model'] == 'deepseek-flash'
     assert body['thinking'] is True
     assert 'sk-draft-not-persisted' not in response.text
     assert seen['key'] == 'sk-draft-not-persisted'
-    assert seen['payload']['model'] == 'deepseek-v4-flash'
+    assert seen['payload']['model'] == 'deepseek-flash'
     assert seen['payload']['thinking']['type'] == 'enabled'
+
+
+def test_ai_config_test_migrates_old_v4_flash_alias(monkeypatch):
+    seen = {}
+
+    def fake_request(payload, api_key):
+        seen['payload'] = payload
+        return 'OK'
+
+    monkeypatch.setattr(coach, '_request_text', fake_request)
+    response = client.post('/api/coach/config/test', json={
+        'api_key': 'sk-draft-not-persisted',
+        'model': 'deepseek-v4-flash',
+        'thinking': False,
+    })
+    assert response.status_code == 200, response.text
+    assert response.json()['model'] == 'deepseek-flash'
+    assert seen['payload']['model'] == 'deepseek-flash'
 
 
 def test_ai_formula_crud_persists_structured_answer():
