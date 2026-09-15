@@ -6,86 +6,99 @@
       "snapshot": "notes/_snapshot_before_split/formal_nodes/analogy-secondary-discrimination.md",
       "sha256": "48f35cdbf1d6bfeaf5ec9f7e852e06e0982d6a0431b7d5b664e23df3729c6fb1",
       "non_whitespace_chars": 3986,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/data-abrx-base.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/data-abrx-base.md",
       "sha256": "e323dc3a4e84be60dd206b2d2184e26efd1fecbb6edc8dbe53e940764180926d",
       "non_whitespace_chars": 4457,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/data-growth-speed-calc.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/data-growth-speed-calc.md",
       "sha256": "0cf764b2ba54a4f28c7bfa8f84672071f745c98380e7b09a437f818fbe8ca8f6",
       "non_whitespace_chars": 4152,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/data-truncated-division.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/data-truncated-division.md",
       "sha256": "bd7798d31b2b9a2f3f95a36c2102f307f8ea0d541a5f1c4c8f0adcb33d3c10f5",
       "non_whitespace_chars": 4050,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/data-two-period-proportion.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/data-two-period-proportion.md",
       "sha256": "3c04fcbbd90632d04835bcd48425f4095d5ccfd0db9a040a83f9c02aa8e967e3",
       "non_whitespace_chars": 4238,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/logic-analytical-reasoning.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/logic-analytical-reasoning.md",
       "sha256": "e1a7334809b9db717dfce83f769cc18cc3a498f2f454b229f9757e9c611bdd0a",
       "non_whitespace_chars": 4062,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/logic-strengthen-premise.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/logic-strengthen-premise.md",
       "sha256": "6b3029696ecb3c55bfc33a11fed8783e1c358a1cd724396096a7cc2a6a4172c8",
       "non_whitespace_chars": 4473,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/logic-translation.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/logic-translation.md",
       "sha256": "992fd28c07052fefb51c4d04b5b0141cc438215888b885e55beb57dc59573f49",
       "non_whitespace_chars": 4081,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/logic-weaken.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/logic-weaken.md",
       "sha256": "198637bd6902f8079da0ceb362e7fd6f520d8a7e3209c3374eedfc1b7245667f",
       "non_whitespace_chars": 3977,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/quant-permutation-probability.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/quant-permutation-probability.md",
       "sha256": "b2ca6c07d504d0a1bdc77b8e692cb639ac9fc307b17b4fa1c753dee52b38c962",
       "non_whitespace_chars": 3823,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/verbal-central-idea.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/verbal-central-idea.md",
       "sha256": "d92aa092757a540b6e746dfad81ad55f142bdf0015983f5f4525c741591b5571",
       "non_whitespace_chars": 3872,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     },
     {
       "path": "local_app/content/nodes/verbal-logical-fill.md",
       "snapshot": "notes/_snapshot_before_split/formal_nodes/verbal-logical-fill.md",
       "sha256": "d901e2e47b28ca5ab1d61204a58229648b41b2409e727067b071150b4c8db6c3",
       "non_whitespace_chars": 3892,
-      "difference_chars": 0
+      "difference_chars": 0,
+      "protected_original": true
     }
   ],
+  "generated_nodes": [],
   "source_notes": [
     {
       "path": "notes/_snapshot_before_split/source_notes/00-快速恢复总纲.md",
