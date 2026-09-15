@@ -100,16 +100,21 @@ def test_runtime_regressions_are_guarded_in_react_source():
     assert '/api/v2/practice/recommendations' in trainings and '推荐训练' in trainings and '自选题目' in trainings
     assert '/api/v2/knowledge-safe/recommendations' in knowledge
     assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
-    assert "xl:grid-cols-[270px_minmax(0,1fr)_250px]" in knowledge
-    assert '按这个方法练 5 题' in knowledge and '补充层' in knowledge
+    assert "xl:grid-cols-[270px_minmax(0,1fr)_250px]" not in knowledge
+    assert 'navOpen' in knowledge and 'toolsOpen' in knowledge
+    assert 'fixed z-40 top-20 left-4' in knowledge and 'fixed z-40 top-20 right-4' in knowledge
+    assert '学习提示与讲法' in knowledge and '情形与扩写' in knowledge
+    assert '按这个方法练 5 题' in knowledge and '复制整节' in knowledge
     assert '30 秒考场唤醒' in knowledge and 'KnowledgeSectionBlock' in knowledge
     assert 'study-markdown' in knowledge_block and '例题演示' in knowledge_block and '边界易错' in knowledge_block
+    assert 'splitKnowledgeMarkdown' in knowledge_block and '复制本节' in knowledge_block
     assert '/api/coach/chat-once' in global_ai
     assert "draftModel,setDraftModel]=useState('deepseek-flash')" in global_ai
     assert "jsonRequest('/api/coach/config',{method:'POST'" in global_ai
     assert '稳定 POST 通道' in global_ai
     assert 'AI 回答不受影响' in global_ai
     assert '/api/v2/practice/save' in runner and '15000' in runner and '暂停并退出' in runner
+    assert '复制题目' in runner
     assert "document.title=zenMode?'Work Notes'" in context
     assert 'Plus Jakarta Sans' in css and 'JetBrains Mono' in css
     assert '[class*="bg-amber-"]' not in css
