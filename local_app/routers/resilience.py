@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from db import jload, query
-from routers.coach import ChatIn, STRUCTURED_RESPONSE_GUIDE, _fallback_chat_text, _retrieval_query
+from routers.coach import ChatIn, ConfigIn, STRUCTURED_RESPONSE_GUIDE, _fallback_chat_text, _retrieval_query
 from services.experience_v2 import (
     get_adoptions,
     get_expansions,
@@ -13,7 +13,8 @@ from services.experience_v2 import (
     note_data_band,
     note_units,
 )
-from services.gongkao_skill import CURRENT_MODEL, build_system_prompt, load_secret_config, normalize_model
+from services.gongkao_skill import CURRENT_MODEL, build_system_prompt, load_secret_config, normalize_model, save_secret_config
+from services.question_ai import analyze_pending_required
 
 r = APIRouter(tags=['runtime-resilience'])
 
@@ -106,9 +107,26 @@ def safe_knowledge_experience(slug: str):
     }
 
 
+@r.post('/api/coach/config')
+def post_config_compat(body: ConfigIn, background_tasks: BackgroundTasks):
+    """POST compatibility route for browser/proxy environments that reject PUT with 405."""
+    try:
+        saved = save_secret_config(
+            api_key=body.api_key,
+            model=body.model,
+            thinking=body.thinking,
+            clear_key=body.clear_key,
+        )
+        if saved.get('configured'):
+            background_tasks.add_task(analyze_pending_required)
+        return saved
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
 @r.post('/api/coach/chat-once')
 def chat_once(body: ChatIn):
-    """Non-stream fallback for browsers/proxies that cannot consume the SSE response reliably."""
+    """Stable non-stream endpoint used by the browser as the default chat transport."""
     cfg = load_secret_config()
     api_key = str(cfg.get('api_key') or '')
     if not api_key:
