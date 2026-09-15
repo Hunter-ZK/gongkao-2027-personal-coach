@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import sys
 import threading
 import time
 import urllib.error
@@ -17,6 +18,18 @@ DEFAULT_PORT = 8000
 MAX_PORT_ATTEMPTS = 20
 BASE = Path(__file__).resolve().parents[1]
 RUNTIME_FILE = BASE / 'data' / 'runtime.json'
+
+# When this file is executed as `python tools/run_local.py`, Python places
+# `local_app/tools` rather than `local_app` at sys.path[0].  Make the app root
+# explicit so `main.py` is importable regardless of the caller's cwd.
+if str(BASE) not in sys.path:
+    sys.path.insert(0, str(BASE))
+
+
+def _load_app():
+    from main import app
+
+    return app
 
 
 def _port_is_available(host: str, port: int) -> bool:
@@ -73,6 +86,11 @@ def _wait_until_healthy_and_open(port: int, timeout_sec: float = 30.0) -> None:
 
 
 def main() -> None:
+    app = _load_app()
+    if '--check-import' in sys.argv:
+        print('[workbench] main import ok', flush=True)
+        return
+
     requested = int(os.environ.get('WORKBENCH_PORT', DEFAULT_PORT))
     port = choose_port(requested)
     if port != requested:
@@ -81,7 +99,7 @@ def main() -> None:
             flush=True,
         )
     threading.Thread(target=_wait_until_healthy_and_open, args=(port,), daemon=True).start()
-    uvicorn.run('main:app', host=HOST, port=port, reload=False)
+    uvicorn.run(app, host=HOST, port=port, reload=False)
 
 
 if __name__ == '__main__':

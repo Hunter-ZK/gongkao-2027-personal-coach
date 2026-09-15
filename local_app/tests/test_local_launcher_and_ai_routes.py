@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -50,14 +52,26 @@ def test_launcher_moves_off_busy_old_backend_port(monkeypatch):
     assert run_local.choose_port(8000, attempts=3) == 8001
 
 
+def test_launcher_file_can_import_main_from_outside_local_app():
+    result = subprocess.run(
+        [sys.executable, str(BASE / 'tools' / 'run_local.py'), '--check-import'],
+        cwd=BASE.parent,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert 'main import ok' in result.stdout
+
+
 def test_all_local_entrypoints_use_same_default_port_and_safe_launcher():
     bat = text('start.bat')
     sh = text('start.sh')
     main = text('main.py')
     vite = text('frontend/vite.config.ts')
 
-    assert 'tools\\run_local.py' in bat
-    assert 'tools/run_local.py' in sh
+    assert '-m tools.run_local' in bat
+    assert '-m tools.run_local' in sh
     assert 'port=8000' in main
     assert "http://127.0.0.1:8000" in vite
     assert '8765' not in main
@@ -69,4 +83,4 @@ def test_health_exposes_current_backend_version():
     assert response.status_code == 200
     payload = response.json()
     assert payload['service'] == 'gongkao-workbench'
-    assert payload['version'] == '2.3.2'
+    assert payload['version'] == '2.3.3'

@@ -13,4 +13,4 @@ if [ ! -x .venv/bin/python ]; then "$PYTHON_BIN" -m venv .venv; fi
 .venv/bin/python tools/generate_missing_nodes.py
 .venv/bin/python tools/import_legacy.py
 .venv/bin/python tools/seed.py
-exec .venv/bin/python tools/run_local.py
+exec .venv/bin/python -m tools.run_local
