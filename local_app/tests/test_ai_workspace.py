@@ -1,3 +1,6 @@
+import io
+import urllib.error
+
 from fastapi.testclient import TestClient
 
 import routers.coach as coach
@@ -55,6 +58,53 @@ def test_ai_config_test_uses_draft_key_without_exposing_it(monkeypatch):
     assert seen['key'] == 'sk-draft-not-persisted'
     assert seen['payload']['model'] == 'deepseek-flash'
     assert seen['payload']['thinking']['type'] == 'enabled'
+
+
+def test_deepseek_transport_uses_post_and_v1_url(monkeypatch):
+    seen = []
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+        def read(self):
+            return b'{"choices":[{"message":{"content":"OK"}}]}'
+
+    def fake_urlopen(request, timeout=90):
+        seen.append((request.full_url, request.get_method()))
+        return FakeResponse()
+
+    monkeypatch.setattr(coach.urllib.request, 'urlopen', fake_urlopen)
+    result = coach._request_text({'model': 'deepseek-flash', 'messages': [{'role': 'user', 'content': 'ping'}]}, 'sk-test')
+    assert result == 'OK'
+    assert seen == [('https://api.deepseek.com/v1/chat/completions', 'POST')]
+
+
+def test_deepseek_transport_falls_back_when_first_route_returns_405(monkeypatch):
+    seen = []
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+        def read(self):
+            return b'{"choices":[{"message":{"content":"fallback-ok"}}]}'
+
+    def fake_urlopen(request, timeout=90):
+        seen.append((request.full_url, request.get_method()))
+        if len(seen) == 1:
+            raise urllib.error.HTTPError(request.full_url, 405, 'Method Not Allowed', {}, io.BytesIO(b'{"error":"method not allowed"}'))
+        return FakeResponse()
+
+    monkeypatch.setattr(coach.urllib.request, 'urlopen', fake_urlopen)
+    result = coach._request_text({'model': 'deepseek-flash', 'messages': [{'role': 'user', 'content': 'ping'}]}, 'sk-test')
+    assert result == 'fallback-ok'
+    assert seen == [
+        ('https://api.deepseek.com/v1/chat/completions', 'POST'),
+        ('https://api.deepseek.com/chat/completions', 'POST'),
+    ]
 
 
 def test_ai_formula_crud_persists_structured_answer():
