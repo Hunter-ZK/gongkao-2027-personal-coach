@@ -14,7 +14,11 @@ CAUSES = [
     '公式调用错误', '推理链遗漏', '计算错误', '速度问题', '取舍问题', '知识缺口',
     '方法生疏', '偶发失误',
 ]
-DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
+DEEPSEEK_URLS = (
+    'https://api.deepseek.com/v1/chat/completions',
+    'https://api.deepseek.com/chat/completions',
+)
+DEEPSEEK_URL = DEEPSEEK_URLS[0]
 AI_MARKER = 'AI 初步分析（错因需人工确认）'
 
 
@@ -118,29 +122,40 @@ def _http_error_message(exc: urllib.error.HTTPError) -> str:
         return 'DeepSeek API Key 无效或已失效。'
     if exc.code == 402:
         return 'DeepSeek 账户余额不足或计费状态异常。'
+    if exc.code == 405:
+        return 'DeepSeek 接口返回 405 Method Not Allowed；已自动尝试兼容地址。'
     if exc.code == 429:
         return 'DeepSeek 请求过多，请稍后重试。'
     return f'DeepSeek API 返回 {exc.code}: {detail}'
 
 
 def _request_json(payload: dict[str, Any], api_key: str) -> str:
-    request = urllib.request.Request(
-        DEEPSEEK_URL,
-        data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {api_key}',
-            'User-Agent': 'Liano-Civil/1.0',
-        },
-        method='POST',
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=90) as response:
-            body = json.loads(response.read().decode('utf-8', errors='replace'))
-    except urllib.error.HTTPError as exc:
-        raise RuntimeError(_http_error_message(exc)) from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f'无法连接 DeepSeek API: {exc.reason}') from exc
+    route_errors: list[str] = []
+    for index, url in enumerate(DEEPSEEK_URLS):
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}',
+                'User-Agent': 'Liano-Civil/1.0',
+            },
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=90) as response:
+                body = json.loads(response.read().decode('utf-8', errors='replace'))
+            break
+        except urllib.error.HTTPError as exc:
+            message = _http_error_message(exc)
+            route_errors.append(f'{url}: {message}')
+            if exc.code in {404, 405} and index < len(DEEPSEEK_URLS) - 1:
+                continue
+            raise RuntimeError(message) from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f'无法连接 DeepSeek API: {exc.reason}') from exc
+    else:
+        raise RuntimeError('DeepSeek 接口地址均不可用。' + '；'.join(route_errors)[:600])
     choices = body.get('choices') or []
     if not choices:
         raise RuntimeError('DeepSeek 未返回有效 choices')
