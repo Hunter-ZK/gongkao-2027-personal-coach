@@ -43,12 +43,103 @@ def _question_payload(mistake_id: int) -> dict[str, Any] | None:
 
 
 def _strip_json_fence(text: str) -> str:
-    value = text.strip()
-    value = re.sub(r'^```(?:json)?\s*', '', value, flags=re.I)
+    value = (text or '').strip().lstrip('\ufeff')
+    value = re.sub(r'^```(?:json|javascript|js)?\s*', '', value, flags=re.I)
     value = re.sub(r'\s*```$', '', value)
+    return value.strip()
+
+
+def _repair_json_text(text: str) -> str:
+    value = _strip_json_fence(text)
+    value = value.replace('“', '"').replace('”', '"').replace('‘', "'").replace('’', "'")
+    value = re.sub(r'<think>[\s\S]*?</think>', '', value, flags=re.I)
+    value = re.sub(r'(?m)^\s*(?:json|JSON)\s*[:：]\s*', '', value)
+    value = re.sub(r',\s*([}\]])', r'\1', value)
+    value = re.sub(r'\bNone\b', 'null', value)
+    value = re.sub(r'\bTrue\b', 'true', value)
+    value = re.sub(r'\bFalse\b', 'false', value)
+    return value.strip()
+
+
+def _unwrap_json(value: Any) -> dict[str, Any] | None:
+    if isinstance(value, dict):
+        for key in ('result', 'data', 'analysis', 'answer'):
+            nested = value.get(key)
+            if isinstance(nested, (dict, str)):
+                candidate = _unwrap_json(nested)
+                if candidate and any(k in candidate for k in ('standard_solution_md', 'fastest_solution_md', 'key_points', 'trap')):
+                    return candidate
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except Exception:
+            return None
+        return _unwrap_json(parsed)
+    return None
+
+
+def _parse_deepseek_json(text: str) -> dict[str, Any]:
+    value = _repair_json_text(text)
+    attempts = [value]
     first = value.find('{')
     last = value.rfind('}')
-    return value[first:last + 1] if first >= 0 and last > first else value
+    if first >= 0 and last > first:
+        attempts.append(value[first:last + 1])
+    decoder = json.JSONDecoder()
+    for candidate in attempts:
+        try:
+            parsed = json.loads(candidate)
+            unwrapped = _unwrap_json(parsed)
+            if unwrapped is not None:
+                return unwrapped
+        except json.JSONDecodeError:
+            pass
+        for idx, char in enumerate(candidate):
+            if char != '{':
+                continue
+            try:
+                parsed, _ = decoder.raw_decode(candidate[idx:])
+                unwrapped = _unwrap_json(parsed)
+                if unwrapped is not None:
+                    return unwrapped
+            except json.JSONDecodeError:
+                continue
+    raise RuntimeError('DeepSeek 返回内容无法解析为 JSON')
+
+
+def _request_json(payload: dict[str, Any], api_key: str) -> str:
+    request = urllib.request.Request(
+        DEEPSEEK_URL,
+        data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}',
+            'User-Agent': 'Liano-Civil/1.0',
+        },
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=90) as response:
+            body = json.loads(response.read().decode('utf-8', errors='replace'))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode('utf-8', errors='replace')[:800]
+        raise RuntimeError(f'DeepSeek API 返回 {exc.code}: {detail}') from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f'无法连接 DeepSeek API: {exc.reason}') from exc
+    choices = body.get('choices') or []
+    if not choices:
+        raise RuntimeError('DeepSeek 未返回有效 choices')
+    message = choices[0].get('message') or {}
+    content = message.get('content')
+    if isinstance(content, (dict, list)):
+        return json.dumps(content, ensure_ascii=False)
+    text = str(content or '').strip()
+    if not text:
+        text = str(message.get('reasoning_content') or '').strip()
+    if not text:
+        raise RuntimeError('DeepSeek 返回内容为空')
+    return text
 
 
 def _call_deepseek(system_prompt: str, user_prompt: str) -> dict[str, Any]:
@@ -64,38 +155,33 @@ def _call_deepseek(system_prompt: str, user_prompt: str) -> dict[str, Any]:
         ],
         'thinking': {'type': 'enabled' if cfg.get('thinking') else 'disabled'},
         'stream': False,
-        'max_tokens': 2200,
+        'max_tokens': 2600,
         'response_format': {'type': 'json_object'},
     }
-    request = urllib.request.Request(
-        DEEPSEEK_URL,
-        data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': f"Bearer {cfg['api_key']}",
-            'User-Agent': 'Liano-Civil/1.0',
-        },
-        method='POST',
-    )
+    raw = _request_json(payload, str(cfg['api_key']))
     try:
-        with urllib.request.urlopen(request, timeout=90) as response:
-            body = json.loads(response.read().decode('utf-8', errors='replace'))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode('utf-8', errors='replace')[:500]
-        raise RuntimeError(f'DeepSeek API 返回 {exc.code}: {detail}') from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f'无法连接 DeepSeek API: {exc.reason}') from exc
-    choices = body.get('choices') or []
-    if not choices:
-        raise RuntimeError('DeepSeek 未返回有效内容')
-    content = str((choices[0].get('message') or {}).get('content') or '')
-    if not content:
-        raise RuntimeError('DeepSeek 返回内容为空')
-    try:
-        result = json.loads(_strip_json_fence(content))
-    except json.JSONDecodeError as exc:
-        raise RuntimeError('DeepSeek 错题解析不是有效 JSON') from exc
-    return result if isinstance(result, dict) else {}
+        return _parse_deepseek_json(raw)
+    except RuntimeError as first_error:
+        repair_payload = {
+            'model': model,
+            'messages': [
+                {
+                    'role': 'system',
+                    'content': '你只负责把输入修复成合法 JSON 对象。不得解释、不得补充事实、不得使用 Markdown。保留原字段和原语义；缺失值用 null。',
+                },
+                {'role': 'user', 'content': raw[:16000]},
+            ],
+            'thinking': {'type': 'disabled'},
+            'stream': False,
+            'max_tokens': 2600,
+            'response_format': {'type': 'json_object'},
+        }
+        repaired = _request_json(repair_payload, str(cfg['api_key']))
+        try:
+            return _parse_deepseek_json(repaired)
+        except RuntimeError as second_error:
+            preview = re.sub(r'\s+', ' ', raw)[:280]
+            raise RuntimeError(f'{first_error}；自动修复仍失败：{second_error}；返回预览：{preview}') from second_error
 
 
 def _valid_node_slugs(values: Any) -> list[str]:
@@ -202,6 +288,6 @@ def analyze_many_mistakes(mistake_ids: list[int]) -> None:
             item = _question_payload(mistake_id)
             if not item:
                 continue
-            note = f'{AI_MARKER}失败：{str(exc)[:240]}。错题已正常入库，可稍后重试。'
+            note = f'{AI_MARKER}失败：{str(exc)[:420]}。错题已正常入库，可稍后重试。'
             with transaction() as conn:
                 conn.execute('UPDATE mistake SET cause_note=?,updated_at=? WHERE id=?', (note, now_iso(), mistake_id))

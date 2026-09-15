@@ -39,10 +39,26 @@ interface AppContextType extends Bootstrap {
 
 const emptySettings: UserSettings = { deepThresholdMin:30, focusThresholdMin:15, weeklyTargetHours:22, targetScores:{guangdong:{xingce:90,shenlun:80},national:{xingce:70,shenlun:70}}, reviewIntervalsDays:[1,3,7,15,30], zenMode:false };
 const empty: Bootstrap = { exams:[],modules:[],phases:[],weekPlans:[],knowledgeNodes:[],methods:[],questions:[],trainings:[],mistakes:[],tasks:[],sessions:[],settings:emptySettings };
-const TAB_PATH:Record<string,string>={dashboard:'/',today:'/today',timer:'/timer',trainings:'/trainings',mistakes:'/mistakes',review:'/review',import:'/import',knowledge:'/knowledge',shenlun:'/shenlun',methods:'/methods',coach:'/coach',weekplan:'/plan'};
+const TAB_PATH:Record<string,string>={dashboard:'/',today:'/today',trainings:'/trainings',mistakes:'/mistakes',review:'/review',import:'/import',knowledge:'/knowledge',shenlun:'/shenlun',methods:'/methods',coach:'/coach',weekplan:'/plan'};
 const PATH_TAB:Record<string,string>=Object.fromEntries(Object.entries(TAB_PATH).map(([k,v])=>[v,k]));
-const activityToApi=(v:string)=>({真题训练:'刷题训练',专项任务:'限时专项',模考测试:'整卷',总结复盘:'复盘整理'} as Record<string,string>)[v]||v;
+const activityToApi=(v:string)=>({真题训练:'刷题训练',专项任务:'限时专项',模考测试:'整卷',总结复盘:'复盘整理',知识恢复:'复盘整理'} as Record<string,string>)[v]||v;
 const activityFromApi=(v:string)=>({刷题训练:'真题训练',限时专项:'真题训练',整卷:'模考测试',复盘整理:'总结复盘'} as Record<string,string>)[v]||v;
+
+export const normalizeKnowledgeModule=(node:KnowledgeNode):string=>{
+  const raw=(node.module||'').trim();
+  if(raw&&raw!=='guangdong'&&raw!=='national'&&raw!=='综合')return raw;
+  const slug=node.slug||'';
+  if(slug.startsWith('data-'))return '资料分析';
+  if(slug.startsWith('verbal-'))return '言语理解';
+  if(slug.startsWith('figure-'))return '图形推理';
+  if(slug.startsWith('science-'))return '科学推理';
+  if(slug.startsWith('politics-')||slug.startsWith('gd-multiple-'))return '政治理论';
+  if(slug.startsWith('common-'))return '常识应用';
+  if(slug==='quant-number-sequence')return '数字推理';
+  if(slug.startsWith('quant-'))return '数学运算';
+  if(slug.startsWith('logic-')||slug.startsWith('analogy-')||slug.startsWith('definition-'))return '逻辑判断';
+  return raw||'综合';
+};
 
 async function jsonFetch<T=any>(url:string, init?:RequestInit):Promise<T>{
   const res=await fetch(url,{...init,headers:{...(init?.body instanceof FormData?{}:{'Content-Type':'application/json'}),...(init?.headers||{})}});
@@ -60,7 +76,7 @@ export const AppProvider:React.FC<{children:ReactNode}>=({children})=>{
   const [timerState,setTimerState]=useState<TimerState>({status:'idle',mode:'stopwatch',elapsedSec:0,targetSec:1500,currentModule:'资料分析',currentActivity:'真题训练',note:'',startTime:null});
   const heartbeat=useRef<number|null>(null);
 
-  const refresh=useCallback(async()=>{try{setLoadError(null);const p=await jsonFetch<Bootstrap>('/api/ui/bootstrap');setData(p);setActiveKnowledgeSlug(prev=>prev||(p.knowledgeNodes[0]?.slug??null));}catch(e:any){setLoadError(e?.message||'加载失败');}finally{setLoading(false)}},[]);
+  const refresh=useCallback(async()=>{try{setLoadError(null);const p=await jsonFetch<Bootstrap>('/api/ui/bootstrap');p.knowledgeNodes=(p.knowledgeNodes||[]).map(n=>({...n,module:normalizeKnowledgeModule(n)}));setData(p);setActiveKnowledgeSlug(prev=>prev||(p.knowledgeNodes[0]?.slug??null));}catch(e:any){setLoadError(e?.message||'加载失败');}finally{setLoading(false)}},[]);
 
   const loadTimer=useCallback(async()=>{try{const s:any=await jsonFetch('/api/timer/state'); const now=Date.now(); let elapsed=Number(s.elapsed_sec||0); if(s.status==='running'&&s.started_at){const start=Date.parse(s.started_at);if(Number.isFinite(start)) elapsed=Math.max(elapsed,Math.floor((now-start)/1000)-Number(s.paused_sec||0));}
     setTimerState(prev=>({...prev,status:s.status||'idle',elapsedSec:elapsed,currentModule:s.module||prev.currentModule,currentActivity:activityFromApi(s.activity_type||prev.currentActivity),startTime:s.started_at?Date.parse(s.started_at):null}));}catch{}},[]);
