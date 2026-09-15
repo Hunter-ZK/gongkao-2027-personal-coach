@@ -21,6 +21,7 @@ from routers import (
     mistakes,
     plan,
     question_ai,
+    review_session_v2,
     sync,
     timer,
     training,
@@ -55,6 +56,7 @@ for router in [
     analytics.r,
     question_ai.r,
     experience_v2.r,
+    review_session_v2.r,
     ui_bridge.r,
     ui_question_ai.r,
 ]:
