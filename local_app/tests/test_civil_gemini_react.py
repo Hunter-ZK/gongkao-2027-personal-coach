@@ -70,9 +70,10 @@ def test_react_knowledge_keeps_gemini_reading_style_with_hideable_navigation_and
     block = text('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
     assert "xl:grid-cols-[270px_minmax(0,1fr)_250px]" not in knowledge
     assert 'navOpen' in knowledge and 'toolsOpen' in knowledge
-    assert 'fixed z-40 top-20 left-4' in knowledge
-    assert 'fixed z-40 top-20 right-4' in knowledge
-    assert '知识目录' in knowledge and '本节导航与工具' in knowledge
+    assert 'md:left-[17rem]' in knowledge
+    assert 'w-[min(760px,calc(100vw-32px))]' in knowledge
+    assert 'grid-cols-[176px_minmax(0,1fr)]' in knowledge
+    assert '知识索引' in knowledge and '本节工具' in knowledge
     assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
     assert '/api/v2/knowledge-safe/recommendations' in knowledge
     assert '/api/v2/knowledge-safe/' in knowledge and '/experience' in knowledge
@@ -105,8 +106,10 @@ def test_global_css_is_close_to_civil_gemini_baseline_not_full_page_retheme():
 
 def test_react_method_library_has_directory_hierarchy_and_detail_pane():
     methods = text('frontend/src/components/views/MethodsView.tsx')
-    assert '方法目录' in methods
-    assert '按模块 → 题型/场景 → 方法进入' in methods
+    assert '方法索引' in methods
+    assert 'grid-cols-[170px_190px_minmax(0,1fr)]' in methods
+    assert 'directoryOpen' in methods and 'md:left-[17rem]' in methods
+    assert "lg:grid-cols-[245px_300px_minmax(0,1fr)]" not in methods
     assert '/api/knowledge/methods' in methods
     assert '有考场口令' in methods and '有边界说明' in methods and '有实战例证' in methods
     assert '考场执行顺序' in methods
