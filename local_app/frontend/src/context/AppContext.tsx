@@ -40,7 +40,7 @@ interface AppContextType extends Bootstrap {
 const emptySettings: UserSettings = { deepThresholdMin:30, focusThresholdMin:15, weeklyTargetHours:22, targetScores:{guangdong:{xingce:90,shenlun:80},national:{xingce:70,shenlun:70}}, reviewIntervalsDays:[1,3,7,15,30], zenMode:false };
 const empty: Bootstrap = { exams:[],modules:[],phases:[],weekPlans:[],knowledgeNodes:[],methods:[],questions:[],trainings:[],mistakes:[],tasks:[],sessions:[],settings:emptySettings,warnings:[] };
 const TAB_PATH:Record<string,string>={dashboard:'/',today:'/today',trainings:'/trainings',mistakes:'/mistakes',review:'/review',import:'/import',knowledge:'/knowledge',shenlun:'/shenlun',methods:'/methods',coach:'/coach',weekplan:'/plan',study:'/timer',progress:'/progress'};
-const PATH_TAB:Record<string,string>={...Object.fromEntries(Object.entries(TAB_PATH).map(([k,v])=>[v,k])),questions:'trainings','/questions':'trainings','/settings':'coach'};
+const PATH_TAB:Record<string,string>={...Object.fromEntries(Object.entries(TAB_PATH).map(([k,v])=>[v,k])),'/questions':'trainings','/settings':'coach'};
 const activityToApi=(v:string)=>({真题训练:'刷题训练',专项任务:'限时专项',模考测试:'整卷',总结复盘:'复盘整理',知识恢复:'复盘整理'} as Record<string,string>)[v]||v;
 const activityFromApi=(v:string)=>({刷题训练:'真题训练',限时专项:'真题训练',整卷:'模考测试',复盘整理:'总结复盘'} as Record<string,string>)[v]||v;
 
@@ -75,7 +75,7 @@ export const AppProvider:React.FC<{children:ReactNode}>=({children})=>{
   const [activeKnowledgeSlug,setActiveKnowledgeSlug]=useState<string|null>(null); const [selectedQuestionId,setSelectedQuestionId]=useState<number|null>(null);
   const [zenMode,setZenMode]=useState(()=>localStorage.getItem('gongkao_zen')==='1');
   const [timerState,setTimerState]=useState<TimerState>({status:'idle',mode:'stopwatch',elapsedSec:0,targetSec:1500,currentModule:'资料分析',currentActivity:'真题训练',note:'',startTime:null});
-  const heartbeat=useRef<number|null>(null); const elapsedRef=useRef(0);
+  const heartbeat=useRef<number|null>(null); const elapsedRef=useRef(0); const syncStarted=useRef(false);
 
   const refresh=useCallback(async()=>{try{setLoadError(null);const raw=await jsonFetch<Partial<Bootstrap>>('/api/ui/bootstrap');const knowledge=asArray<KnowledgeNode>(raw.knowledgeNodes).map(n=>({...n,content:String(n.content||''),module:normalizeKnowledgeModule(n)}));const normalized:Bootstrap={
       exams:asArray<Exam>(raw.exams),modules:asArray<PaperModule>(raw.modules),phases:asArray<Phase>(raw.phases),weekPlans:asArray<WeekPlan>(raw.weekPlans),knowledgeNodes:knowledge,
@@ -87,10 +87,12 @@ export const AppProvider:React.FC<{children:ReactNode}>=({children})=>{
     elapsedRef.current=elapsed;setTimerState(prev=>({...prev,status:s.status||'idle',elapsedSec:elapsed,currentModule:s.module||prev.currentModule,currentActivity:activityFromApi(s.activity_type||prev.currentActivity),startTime:s.started_at?Date.parse(s.started_at):null}));}catch{}},[]);
 
   useEffect(()=>{refresh();loadTimer();},[refresh,loadTimer]);
+  useEffect(()=>{if(syncStarted.current)return;syncStarted.current=true;const pull=async()=>{try{const res=await fetch('/api/sync/pull',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({force:false})});if(res.ok){await refresh();return}if(res.status===409){const p=await res.json().catch(()=>({}));window.dispatchEvent(new CustomEvent('gongkao:sync-conflict',{detail:p?.error?.message||p?.detail||'本机与云端同时有更新'}))}}catch{}};void pull();const push=()=>{try{fetch('/api/sync/push',{method:'POST',keepalive:true}).catch(()=>{})}catch{}};window.addEventListener('pagehide',push);return()=>window.removeEventListener('pagehide',push)},[refresh]);
+  useEffect(()=>{const done=()=>void refresh();window.addEventListener('gongkao:practice-finished',done);return()=>window.removeEventListener('gongkao:practice-finished',done)},[refresh]);
   useEffect(()=>{const pop=()=>setActiveTabState(PATH_TAB[window.location.pathname]||'dashboard');window.addEventListener('popstate',pop);return()=>window.removeEventListener('popstate',pop)},[]);
   const setActiveTab=useCallback((tab:string)=>{const safe=TAB_PATH[tab]?tab:'dashboard';setActiveTabState(safe);const target=TAB_PATH[safe];if(window.location.pathname!==target)history.pushState({},'',target);},[]);
 
-  useEffect(()=>{document.documentElement.toggleAttribute('data-zen',zenMode);document.title=zenMode?'Work Notes · Workspace':'2027 公考备考工作台';localStorage.setItem('gongkao_zen',zenMode?'1':'0')},[zenMode]);
+  useEffect(()=>{document.documentElement.toggleAttribute('data-zen',zenMode);document.title=zenMode?'Work Notes':'2027 公考备考工作台';localStorage.setItem('gongkao_zen',zenMode?'1':'0')},[zenMode]);
   useEffect(()=>{elapsedRef.current=timerState.elapsedSec},[timerState.elapsedSec]);
   useEffect(()=>{if(timerState.status!=='running')return;const id=window.setInterval(()=>setTimerState(p=>({...p,elapsedSec:p.elapsedSec+1})),1000);return()=>clearInterval(id)},[timerState.status]);
   useEffect(()=>{if(heartbeat.current){clearInterval(heartbeat.current);heartbeat.current=null}if(timerState.status==='idle')return;heartbeat.current=window.setInterval(()=>{jsonFetch('/api/timer/heartbeat',{method:'POST',body:JSON.stringify({elapsed_sec:elapsedRef.current,paused_sec:0})}).catch(()=>{})},15000);return()=>{if(heartbeat.current){clearInterval(heartbeat.current);heartbeat.current=null}}},[timerState.status]);

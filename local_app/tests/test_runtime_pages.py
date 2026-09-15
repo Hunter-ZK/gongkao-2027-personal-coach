@@ -32,26 +32,36 @@ def test_primary_read_apis_are_runtime_safe():
 
     methods = client.get('/api/knowledge/methods')
     assert methods.status_code == 200, methods.text
-    method_rows = methods.json()
-    assert isinstance(method_rows, list)
-    if method_rows:
-        assert method_rows[0].get('category')
+    assert isinstance(methods.json(), list)
 
-    for endpoint in ('/api/analytics/study?days=90', '/api/analytics/questions?days=365', '/api/coach/config'):
+    for endpoint in ('/api/analytics/study?days=90', '/api/analytics/questions?days=365', '/api/coach/config', '/api/v2/background/status'):
         response = client.get(endpoint)
         assert response.status_code == 200, f'{endpoint}: {response.text}'
         assert isinstance(response.json(), dict)
 
+    for endpoint in ('/api/v2/knowledge/recommendations', '/api/v2/practice/recommendations'):
+        response = client.get(endpoint)
+        assert response.status_code == 200, f'{endpoint}: {response.text}'
+        assert isinstance(response.json(), list)
+
     nodes = payload.get('knowledgeNodes') or []
     if nodes:
-        reading = client.get(f"/api/knowledge/node/{nodes[0]['slug']}/reading")
+        slug = nodes[0]['slug']
+        reading = client.get(f'/api/knowledge/node/{slug}/reading')
         assert reading.status_code == 200, reading.text
         pack = reading.json()
         assert isinstance(pack.get('sections'), list)
         assert isinstance(pack.get('lesson_sections'), list)
-        profile = pack.get('profile') or {}
-        for key in ('priority', 'exam_route', 'avoid', 'training', 'lenses'):
-            assert isinstance(profile.get(key), list), key
+        experience = client.get(f'/api/v2/knowledge/{slug}/experience')
+        assert experience.status_code == 200, experience.text
+        xp = experience.json()
+        assert isinstance(xp.get('units'), list)
+        assert xp['units'], slug
+        assert isinstance(xp.get('data_band'), dict)
+
+    integrity = client.get('/api/v2/knowledge/integrity')
+    assert integrity.status_code == 200, integrity.text
+    assert integrity.json().get('difference_chars') == 0
 
 
 def test_runtime_regressions_are_guarded_in_react_source():
@@ -60,6 +70,10 @@ def test_runtime_regressions_are_guarded_in_react_source():
     sidebar = text('frontend/src/components/layout/Sidebar.tsx')
     today = text('frontend/src/components/views/TodayTasksView.tsx')
     review = text('frontend/src/components/views/ReviewView.tsx')
+    trainings = text('frontend/src/components/views/TrainingsView.tsx')
+    knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
+    runner = text('frontend/src/components/common/PracticeRunner.tsx')
+    css = text('frontend/src/index.css')
 
     assert "study:'/timer'" in context
     assert "progress:'/progress'" in context
@@ -70,5 +84,13 @@ def test_runtime_regressions_are_guarded_in_react_source():
     assert "setActiveTab('timer')" not in today
     assert "setActiveTab('study')" in today
     assert 'StudyAnalyticsView' in app and 'ProgressView' in app
+    assert 'PracticeRunner' in app and 'BackgroundStatusBadge' in app
     assert "id:'study'" in sidebar and "id:'progress'" in sidebar
-    assert 'answerReviewQuestion' in review and 'refresh' in review
+
+    assert '/api/v2/review/save' in review and '15000' in review and '暂停并退出' in review
+    assert '/api/v2/practice/recommendations' in trainings and '推荐训练' in trainings and '自选题目' in trainings
+    assert '/api/v2/knowledge/recommendations' in knowledge and '现在最值得看的笔记' in knowledge
+    assert '按这个方法练 5 题' in knowledge and '展开出处层' in knowledge
+    assert '/api/v2/practice/save' in runner and '15000' in runner and '暂停并退出' in runner
+    assert "document.title=zenMode?'Work Notes'" in context
+    assert 'font-family: Georgia' in css

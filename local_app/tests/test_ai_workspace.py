@@ -49,10 +49,11 @@ def test_ai_config_test_uses_draft_key_without_exposing_it(monkeypatch):
     assert response.status_code == 200, response.text
     body = response.json()
     assert body['ok'] is True
-    assert body['model'] == 'deepseek-flash'
+    assert body['model'] == 'deepseek-v4-flash'
     assert body['thinking'] is True
     assert 'sk-draft-not-persisted' not in response.text
     assert seen['key'] == 'sk-draft-not-persisted'
+    assert seen['payload']['model'] == 'deepseek-v4-flash'
     assert seen['payload']['thinking']['type'] == 'enabled'
 
 

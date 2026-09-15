@@ -28,7 +28,7 @@ def test_deepseek_json_parser_rejects_non_json_content():
 
 
 def test_empty_json_output_automatically_retries_without_thinking(monkeypatch):
-    monkeypatch.setattr(ai, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-flash', 'thinking': True})
+    monkeypatch.setattr(ai, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-v4-flash', 'thinking': True})
     calls = []
 
     def fake_request(payload, api_key):
@@ -41,12 +41,13 @@ def test_empty_json_output_automatically_retries_without_thinking(monkeypatch):
     result = _call_deepseek('system', '请返回 json')
     assert result['standard_solution_md'] == '第二次返回正常'
     assert len(calls) == 2
+    assert calls[0]['model'] == 'deepseek-v4-flash'
     assert calls[0]['thinking']['type'] == 'enabled'
     assert calls[1]['thinking']['type'] == 'disabled'
 
 
 def test_json_output_can_fall_back_to_plain_completion(monkeypatch):
-    monkeypatch.setattr(ai, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-flash', 'thinking': False})
+    monkeypatch.setattr(ai, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-v4-flash', 'thinking': False})
     calls = []
 
     def fake_request(payload, api_key):
@@ -60,3 +61,4 @@ def test_json_output_can_fall_back_to_plain_completion(monkeypatch):
     result = _call_deepseek('system', 'json please')
     assert result['standard_solution_md'] == '普通模式恢复'
     assert len(calls) == 3
+    assert all(call['model'] == 'deepseek-v4-flash' for call in calls)

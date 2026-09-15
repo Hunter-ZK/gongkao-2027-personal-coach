@@ -15,9 +15,13 @@ SKILL_EXTRACT_DIR = BASE / 'content' / 'skill_extracts'
 METHOD_DIR = BASE / 'content' / 'methods'
 NODE_DIR = BASE / 'content' / 'nodes'
 SECRETS_PATH = BASE / 'data' / 'secrets.json'
-CURRENT_MODEL = 'deepseek-flash'
-LEGACY_MODEL_ALIASES = {'deepseek-v4-flash': CURRENT_MODEL}
-ALLOWED_MODELS = {CURRENT_MODEL, 'deepseek-v4-flash', 'deepseek-v4-pro'}
+CURRENT_MODEL = 'deepseek-v4-flash'
+LEGACY_MODEL_ALIASES = {
+    'deepseek-flash': CURRENT_MODEL,
+    'deepseek-chat': CURRENT_MODEL,
+    'deepseek-reasoner': CURRENT_MODEL,
+}
+ALLOWED_MODELS = {CURRENT_MODEL, 'deepseek-v4-pro'}
 DEFAULT_MODEL = CURRENT_MODEL
 
 KEYWORD_GROUPS = {
@@ -160,6 +164,7 @@ def retrieve_context(query: str, limit: int = 8, char_budget: int = 22000) -> li
 
     chosen: list[dict[str, str]] = []
     seen_sources: set[tuple[str, str]] = set()
+
     def add(doc: dict[str, str]) -> None:
         key = (doc['kind'], doc['source'])
         if key not in seen_sources:
@@ -229,9 +234,14 @@ def load_secret_config() -> dict[str, Any]:
     stored = _read_json(SECRETS_PATH, {})
     env_key = os.environ.get('DEEPSEEK_API_KEY', '').strip()
     model = normalize_model(str(stored.get('model') or DEFAULT_MODEL))
-    if model not in {CURRENT_MODEL, 'deepseek-v4-pro'}:
+    if model not in ALLOWED_MODELS:
         model = DEFAULT_MODEL
-    return {'api_key': env_key or str(stored.get('api_key') or ''), 'model': model, 'thinking': bool(stored.get('thinking', False)), 'key_source': 'environment' if env_key else ('local' if stored.get('api_key') else 'none')}
+    return {
+        'api_key': env_key or str(stored.get('api_key') or ''),
+        'model': model,
+        'thinking': bool(stored.get('thinking', False)),
+        'key_source': 'environment' if env_key else ('local' if stored.get('api_key') else 'none'),
+    }
 
 
 def public_config() -> dict[str, Any]:
@@ -242,16 +252,16 @@ def public_config() -> dict[str, Any]:
         'thinking': cfg['thinking'],
         'key_source': cfg['key_source'],
         'models': [
-            {'id': CURRENT_MODEL, 'label': 'DeepSeek V4.1 Flash · 当前推荐', 'note': '适合日常问答与题目解析'},
-            {'id': 'deepseek-v4-pro', 'label': 'DeepSeek V4 Pro · 兼容入口', 'note': '当前官方可能路由至 V4.1 Flash；以 DeepSeek 实际路由为准'},
+            {'id': CURRENT_MODEL, 'label': 'DeepSeek V4 Flash · 当前推荐', 'note': '适合日常问答、错题解析与 JSON 结构化输出'},
+            {'id': 'deepseek-v4-pro', 'label': 'DeepSeek V4 Pro', 'note': '更高推理预算；调用方式与 Flash 相同'},
         ],
-        'model_notice': '旧 deepseek-v4-flash 配置会自动迁移到 deepseek-flash。',
+        'model_notice': '旧 deepseek-flash / deepseek-chat / deepseek-reasoner 配置会自动迁移到 deepseek-v4-flash。',
     }
 
 
 def save_secret_config(*, api_key: str | None, model: str, thinking: bool, clear_key: bool = False) -> dict[str, Any]:
     normalized = normalize_model(model)
-    if normalized not in {CURRENT_MODEL, 'deepseek-v4-pro'}:
+    if normalized not in ALLOWED_MODELS:
         raise ValueError('不支持的 DeepSeek 模型')
     existing = _read_json(SECRETS_PATH, {})
     if clear_key:

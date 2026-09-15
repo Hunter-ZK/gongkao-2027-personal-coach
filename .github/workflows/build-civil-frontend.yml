@@ -6,8 +6,12 @@ on:
       - 'feature/**'
       - 'fix/**'
       - 'hotfix/**'
+      - 'docs/**'
     paths:
       - 'local_app/frontend/**'
+      - 'local_app/content/nodes/**'
+      - 'local_app/tools/snapshot_notes_v2.py'
+      - 'notes/xingce/**'
       - '.github/workflows/build-civil-frontend.yml'
 
 permissions:
@@ -32,14 +36,16 @@ jobs:
       - name: Build React frontend
         working-directory: local_app/frontend
         run: npm run build
-      - name: Commit build artifacts
+      - name: Snapshot and verify immutable note sources
+        run: python local_app/tools/snapshot_notes_v2.py
+      - name: Commit build and integrity artifacts
         run: |
           git config user.name "Gongkao Workbench CI"
           git config user.email "gongkao-workbench@users.noreply.github.com"
-          git add local_app/frontend/package-lock.json local_app/frontend_dist
+          git add local_app/frontend/package-lock.json local_app/frontend_dist notes/_snapshot_before_split plans/experience-upgrade-v2/切分比对报告.md plans/experience-upgrade-v2/切分结果清单.md
           if git diff --cached --quiet; then
             echo "Build artifacts already up to date"
           else
-            git commit -m "Build Civil Gemini frontend [skip frontend-build]"
+            git commit -m "Build Civil Gemini frontend and note snapshot [skip frontend-build]"
             git push origin HEAD:${GITHUB_REF_NAME}
           fi

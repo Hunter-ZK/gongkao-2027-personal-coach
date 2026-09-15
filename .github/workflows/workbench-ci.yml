@@ -45,6 +45,8 @@ jobs:
           python tools/generate_missing_nodes.py
           python tools/import_legacy.py
           python tools/seed.py
+      - name: Verify immutable note split
+        run: python tools/snapshot_notes_v2.py
       - name: Python tests
         run: python -m pytest -q -rs
       - name: Compile Python
