@@ -29,7 +29,13 @@ from services.mistake_ai import (
 from services.question_ai import analyze_pending_required
 
 r = APIRouter(prefix='/api/coach', tags=['coach'])
-DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
+# DeepSeek's current first-party integrations use the explicit /v1 Chat Completions URL.
+# The non-/v1 path is retained as a compatibility fallback because both forms exist in official docs.
+DEEPSEEK_URLS = (
+    'https://api.deepseek.com/v1/chat/completions',
+    'https://api.deepseek.com/chat/completions',
+)
+DEEPSEEK_URL = DEEPSEEK_URLS[0]
 
 STRUCTURED_RESPONSE_GUIDE = '''
 
@@ -184,6 +190,8 @@ def _error_message(exc: urllib.error.HTTPError) -> tuple[str, str]:
         return 'DeepSeek API Key 无效或已失效。', detail
     if exc.code == 402:
         return 'DeepSeek 账户余额不足或计费状态异常。', detail
+    if exc.code == 405:
+        return 'DeepSeek 接口返回 405 Method Not Allowed；已自动尝试兼容地址。', detail
     if exc.code == 429:
         return 'DeepSeek 当前请求过多，请稍后重试。', detail
     if exc.code == 400:
@@ -192,24 +200,33 @@ def _error_message(exc: urllib.error.HTTPError) -> tuple[str, str]:
 
 
 def _request_text(payload: dict, api_key: str) -> str:
-    request = urllib.request.Request(
-        DEEPSEEK_URL,
-        data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {api_key}',
-            'User-Agent': 'Liano-Civil/1.0',
-        },
-        method='POST',
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=90) as response:
-            body = json.loads(response.read().decode('utf-8', errors='replace'))
-    except urllib.error.HTTPError as exc:
-        message, detail = _error_message(exc)
-        raise RuntimeError(f'{message} {detail[:400]}'.strip()) from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f'无法连接 DeepSeek API：{exc.reason}') from exc
+    route_errors: list[str] = []
+    for index, url in enumerate(DEEPSEEK_URLS):
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}',
+                'User-Agent': 'Liano-Civil/1.0',
+            },
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=90) as response:
+                body = json.loads(response.read().decode('utf-8', errors='replace'))
+            break
+        except urllib.error.HTTPError as exc:
+            message, detail = _error_message(exc)
+            route_errors.append(f'{url}: {message} {detail[:180]}'.strip())
+            if exc.code in {404, 405} and index < len(DEEPSEEK_URLS) - 1:
+                continue
+            raise RuntimeError(f'{message} {detail[:400]}'.strip()) from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f'无法连接 DeepSeek API：{exc.reason}') from exc
+    else:
+        raise RuntimeError('DeepSeek 接口地址均不可用。' + '；'.join(route_errors)[:600])
+
     choices = body.get('choices') or []
     if not choices:
         raise RuntimeError('DeepSeek 未返回有效 choices。')
@@ -329,7 +346,6 @@ def _deepseek_stream(body: ChatIn) -> Iterator[bytes]:
                     continue
                 delta = choices[0].get('delta') or {}
                 text = delta.get('content')
-                # reasoning_content is intentionally ignored: it is not user-visible answer text.
                 if text:
                     emitted = True
                     yield _sse({'type': 'delta', 'text': text})
@@ -338,7 +354,7 @@ def _deepseek_stream(body: ChatIn) -> Iterator[bytes]:
             yield _sse({'type': 'delta', 'text': fallback, 'fallback': True})
         yield _sse({'type': 'done'})
     except urllib.error.HTTPError as exc:
-        if exc.code == 400 and not emitted:
+        if exc.code in {400, 404, 405} and not emitted:
             try:
                 fallback = _fallback_chat_text(model, messages, api_key)
                 yield _sse({'type': 'delta', 'text': fallback, 'fallback': True})
