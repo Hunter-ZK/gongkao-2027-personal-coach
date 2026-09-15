@@ -15,9 +15,10 @@ SKILL_EXTRACT_DIR = BASE / 'content' / 'skill_extracts'
 METHOD_DIR = BASE / 'content' / 'methods'
 NODE_DIR = BASE / 'content' / 'nodes'
 SECRETS_PATH = BASE / 'data' / 'secrets.json'
-CURRENT_MODEL = 'deepseek-v4-flash'
+CURRENT_MODEL = 'deepseek-flash'
 LEGACY_MODEL_ALIASES = {
-    'deepseek-flash': CURRENT_MODEL,
+    'deepseek-v4-flash': CURRENT_MODEL,
+    'deepseek-v4-flash-vision-exp': CURRENT_MODEL,
     'deepseek-chat': CURRENT_MODEL,
     'deepseek-reasoner': CURRENT_MODEL,
 }
@@ -151,7 +152,6 @@ def _score_doc(doc: dict[str, str], terms: list[str], query: str) -> int:
 
 def retrieve_context(query: str, limit: int = 8, char_budget: int = 22000) -> list[dict[str, str]]:
     terms = _query_terms(query)
-    # Keep the original three retrieval sources intact, then enrich them with per-node Skill teaching lenses.
     docs = load_method_documents() + load_node_documents() + load_skill_documents()
     docs += load_skill_lens_documents()
     kind_priority = {'method': 0, 'node': 1, 'skill_lens': 2, 'skill_secondary': 3}
@@ -252,10 +252,10 @@ def public_config() -> dict[str, Any]:
         'thinking': cfg['thinking'],
         'key_source': cfg['key_source'],
         'models': [
-            {'id': CURRENT_MODEL, 'label': 'DeepSeek V4 Flash · 当前推荐', 'note': '适合日常问答、错题解析与 JSON 结构化输出'},
-            {'id': 'deepseek-v4-pro', 'label': 'DeepSeek V4 Pro', 'note': '更高推理预算；调用方式与 Flash 相同'},
+            {'id': CURRENT_MODEL, 'label': 'DeepSeek V4.1 Flash · 当前推荐', 'note': '官方当前主模型名 deepseek-flash；适合日常问答、错题解析与 JSON 结构化输出'},
+            {'id': 'deepseek-v4-pro', 'label': 'DeepSeek V4 Pro · 兼容入口', 'note': '官方当前会路由到 V4.1 Flash；保留仅用于兼容已存配置'},
         ],
-        'model_notice': '旧 deepseek-flash / deepseek-chat / deepseek-reasoner 配置会自动迁移到 deepseek-v4-flash。',
+        'model_notice': '旧 deepseek-v4-flash / deepseek-chat / deepseek-reasoner 配置会自动迁移到 deepseek-flash。',
     }
 
 
