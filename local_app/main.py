@@ -21,6 +21,7 @@ from routers import (
     mistakes,
     plan,
     question_ai,
+    resilience,
     review_session_v2,
     sync,
     timer,
@@ -33,7 +34,7 @@ BASE = Path(__file__).resolve().parent
 DIST = BASE / 'frontend_dist'
 migrate()
 
-app = FastAPI(title='2027 公考个人备考工作台', version='2.3.0')
+app = FastAPI(title='2027 公考个人备考工作台', version='2.3.1')
 app.mount('/static', StaticFiles(directory=BASE / 'static'), name='static')
 app.mount('/data-images', StaticFiles(directory=BASE / 'data' / 'images'), name='data-images')
 if (DIST / 'assets').exists():
@@ -50,6 +51,7 @@ for router in [
     plan.r,
     misc.r,
     coach.r,
+    resilience.r,
     ai_workspace.r,
     ai_workspace.history_r,
     sync.r,
@@ -68,7 +70,7 @@ def health():
     return {
         'ok': True,
         'service': 'gongkao-workbench',
-        'version': '2.3.0',
+        'version': '2.3.1',
         'frontend': 'civil-gemini-react' if (DIST / 'index.html').exists() else 'legacy-fallback',
     }
 
