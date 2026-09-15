@@ -7,12 +7,14 @@ def _pattern_rows(module, subtype, cause):
                     FROM mistake m JOIN question q ON q.id=m.question_id
                     WHERE COALESCE(q.module,'未分类')=?
                       AND COALESCE(q.subtype,'')=COALESCE(?, '')
-                      AND m.cause_primary=?""",(module or '未分类',subtype,cause))
+                      AND m.cause_primary=? AND COALESCE(m.not_worth_doing,0)=0""",(module or '未分类',subtype,cause))
 
 def refresh_for_mistake(mistake_id:int):
     m=query_one("""SELECT m.*,q.module,q.subtype,q.node_slug,q.training_id
                    FROM mistake m JOIN question q ON q.id=m.question_id WHERE m.id=?""",(mistake_id,))
     if not m or not m.get('cause_primary'): return None
+    if m.get('cause_primary')=='偶发失误' or int(m.get('not_worth_doing') or 0):
+        return None
     module=m.get('module') or '未分类'; subtype=m.get('subtype'); cause=m['cause_primary']; key=f"{module}|{subtype or ''}|{cause}"
     same=_pattern_rows(module,subtype,cause); mids=[x['id'] for x in same]; ids=sorted({x['question_id'] for x in same}); distinct=len({x['training_id'] for x in same if x['training_id']})
     attempts=[]
