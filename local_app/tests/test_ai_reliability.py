@@ -1,3 +1,6 @@
+import io
+import urllib.error
+
 import pytest
 
 import services.mistake_ai as ai
@@ -25,6 +28,32 @@ def test_deepseek_json_parser_unwraps_nested_result_and_string_json():
 def test_deepseek_json_parser_rejects_non_json_content():
     with pytest.raises(RuntimeError, match='无法解析为 JSON'):
         _parse_deepseek_json('这是一段完全没有结构化对象的回答。')
+
+
+def test_wrong_question_transport_uses_post_and_falls_back_from_405(monkeypatch):
+    seen = []
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+        def read(self):
+            return b'{"choices":[{"message":{"content":"{\\"standard_solution_md\\":\\"ok\\"}"}}]}'
+
+    def fake_urlopen(request, timeout=90):
+        seen.append((request.full_url, request.get_method()))
+        if len(seen) == 1:
+            raise urllib.error.HTTPError(request.full_url, 405, 'Method Not Allowed', {}, io.BytesIO(b'method not allowed'))
+        return FakeResponse()
+
+    monkeypatch.setattr(ai.urllib.request, 'urlopen', fake_urlopen)
+    text = ai._request_json({'model': 'deepseek-flash', 'messages': [{'role': 'user', 'content': 'ping'}]}, 'sk-test')
+    assert 'standard_solution_md' in text
+    assert seen == [
+        ('https://api.deepseek.com/v1/chat/completions', 'POST'),
+        ('https://api.deepseek.com/chat/completions', 'POST'),
+    ]
 
 
 def test_empty_json_output_automatically_retries_without_thinking(monkeypatch):
