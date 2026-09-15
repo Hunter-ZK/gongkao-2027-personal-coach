@@ -27,25 +27,29 @@ def test_react_data_layer_uses_real_api_not_reference_mock_store():
     assert 'sampleFenbiText' not in import_view
 
 
-def test_global_ai_has_dual_transport_nonblocking_history_and_real_settings():
+def test_global_ai_uses_stable_post_transport_nonblocking_history_and_real_settings():
     header = text('frontend/src/components/layout/Header.tsx')
     sidebar = text('frontend/src/components/layout/Sidebar.tsx')
     app = text('frontend/src/App.tsx')
     global_ai = text('frontend/src/components/common/GlobalAiDrawer.tsx')
     coach = text('routers/coach.py')
+    resilience = text('routers/resilience.py')
     assert 'bg-stone-900' in header and 'bg-stone-900' in sidebar
     assert 'GlobalAiDrawer' in app
-    assert '/api/coach/chat' in global_ai
     assert '/api/coach/chat-once' in global_ai
+    assert "jsonRequest('/api/coach/config',{method:'POST'" in global_ai
     assert '/api/ai-conversations' in global_ai
     assert '历史记录暂不可写入' in global_ai and 'AI 回答不受影响' in global_ai
-    assert 'deepseek-v4-flash' in global_ai
+    assert 'deepseek-flash' in global_ai
     assert 'Skill / 方法依据' in global_ai
     assert 'DeepSeek 配置' in global_ai
     assert '/api/coach/config/test' in global_ai
     assert 'API Key' in global_ai and '深度思考' in global_ai
     assert 'type="password"' in global_ai
-    assert 'reasoning_content is intentionally ignored' in coach
+    assert "'https://api.deepseek.com/v1/chat/completions'" in coach
+    assert "method='POST'" in coach
+    assert "@r.post('/api/coach/config')" in resilience
+    assert "@r.post('/api/coach/chat-once')" in resilience
 
 
 def test_react_timer_is_compact_global_control_not_a_page():
@@ -63,6 +67,7 @@ def test_react_timer_is_compact_global_control_not_a_page():
 
 def test_react_knowledge_restores_gemini_reader_and_keeps_v2_features():
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
+    block = text('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
     assert "xl:grid-cols-[270px_minmax(0,1fr)_250px]" in knowledge
     assert '行测知识目录' in knowledge
     assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
@@ -75,6 +80,10 @@ def test_react_knowledge_restores_gemini_reader_and_keeps_v2_features():
     assert '补充层' in knowledge and '我的批注' in knowledge
     assert '/adoption' in knowledge and '/expansion' in knowledge
     assert '正文阅读仍可继续' in knowledge
+    assert '30 秒考场唤醒' in knowledge
+    assert 'KnowledgeSectionBlock' in knowledge
+    for label in ('识别信号', '主方法', '考场提速', '例题演示', '边界易错', '训练复盘', '原理解释'):
+        assert label in block
 
 
 def test_global_css_is_close_to_civil_gemini_baseline_not_full_page_retheme():
@@ -82,6 +91,7 @@ def test_global_css_is_close_to_civil_gemini_baseline_not_full_page_retheme():
     assert 'Plus Jakarta Sans' in css and 'JetBrains Mono' in css
     assert '::-webkit-scrollbar' in css
     assert '.knowledge-reader' in css
+    assert '.study-markdown' in css
     assert 'html[data-zen]' in css
     assert '[class*="bg-amber-"]' not in css
     assert '.h-1\\.5' not in css
