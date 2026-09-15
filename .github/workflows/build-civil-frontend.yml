@@ -6,6 +6,7 @@ on:
       - 'feature/**'
       - 'fix/**'
       - 'hotfix/**'
+      - 'docs/**'
     paths:
       - 'local_app/frontend/**'
       - '.github/workflows/build-civil-frontend.yml'
