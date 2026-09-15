@@ -14,3 +14,36 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+/* Zen mode is intentionally low-contrast and dark so the workbench reads like a generic work tool. */
+html[data-zen] { color-scheme: dark; background: #0d0f12; }
+html[data-zen] body,
+html[data-zen] #workbench-shell,
+html[data-zen] #main-content-area { background: #0d0f12 !important; color: #d4d4d8 !important; }
+html[data-zen] #app-header,
+html[data-zen] #app-sidebar-desktop,
+html[data-zen] #app-sidebar-mobile,
+html[data-zen] #global-ai-drawer { background: #121419 !important; border-color: #2b2e35 !important; box-shadow: none !important; }
+html[data-zen] #main-content-area .bg-white,
+html[data-zen] #global-ai-drawer .bg-white,
+html[data-zen] #compact-timer-popover,
+html[data-zen] .bg-stone-50,
+html[data-zen] .bg-stone-50\/50,
+html[data-zen] .bg-stone-50\/80,
+html[data-zen] .bg-stone-100,
+html[data-zen] .bg-stone-100\/60,
+html[data-zen] .bg-stone-100\/70 { background-color: #17191f !important; }
+html[data-zen] .text-stone-950,
+html[data-zen] .text-stone-900,
+html[data-zen] .text-stone-800 { color: #e4e4e7 !important; }
+html[data-zen] .text-stone-700,
+html[data-zen] .text-stone-600,
+html[data-zen] .text-stone-500 { color: #a1a1aa !important; }
+html[data-zen] .text-stone-400,
+html[data-zen] .text-stone-300 { color: #71717a !important; }
+html[data-zen] [class*="border-stone-"] { border-color: #2b2e35 !important; }
+html[data-zen] input,
+html[data-zen] textarea,
+html[data-zen] select { background: #111318 !important; color: #d4d4d8 !important; border-color: #34373f !important; }
+html[data-zen] #global-ai-fab { background: #272a31 !important; color: #d4d4d8 !important; }
+html[data-zen] ::-webkit-scrollbar-thumb { background: #3f3f46; }

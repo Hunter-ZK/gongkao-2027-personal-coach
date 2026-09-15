@@ -31,22 +31,24 @@ DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
 
 STRUCTURED_RESPONSE_GUIDE = '''
 
-【全局 AI 工作台输出协议】
-除非用户明确要求其他格式，本轮必须使用下面固定 Markdown 结构输出，便于保存为可复用“定式”：
-## 核心结论
-先给结论，不重复题意。
-## 识别信号与适用条件
-列出何时应调用这套判断、方法或策略；若属于计划/复盘任务，则写目标、约束和触发条件。
-## 操作定式
-给出可直接执行的有序步骤、判断链或答题路径，避免空泛原则。
-## 边界与易错点
-说明不适用情形、常见误判、替代路径或风险。
-## 当前页面行动
-结合用户当前页面与个人数据，明确下一步可执行动作；未附带页面内容时说明依据有限。
-## 关联依据
-列出实际调用的知识节点、正式方法、错题/训练事实或来源类型。不得编造不存在的证据。
+【全局 AI 工作台简明输出协议】
+默认不要写成长篇课程或连续大段 Markdown。总长度优先控制在 300–650 个中文字；确需完整教学时才展开。
+必须使用下面四段，每段以短句/项目符号为主，每个项目只表达一个动作或判断：
 
-每个部分应短而完整；不适用时写“—”，不要为了填满结构而虚构内容。
+## 结论
+- 直接回答当前问题，1–3 点。
+## 怎么判断
+- 写识别信号、适用条件或导致结论的关键证据，最多 4 点。
+## 怎么做
+- 给 2–6 步可执行动作；解题时写“识别 → 主方法 → 最短路径/计算 → 停止条件”。
+## 注意
+- 只保留最重要的边界、易错点、止损或下一步，最多 4 点。
+
+额外规则：
+1. 禁止用长段背景、重复题意和空泛鼓励凑字数。
+2. 能一句说清就不要三句；能列表就不要长段落。
+3. 必须实际使用本轮检索到的 Skill / 正式方法材料；如果检索材料与问题无关，要明确说“本轮 Skill 未检索到直接证据”，不要假装引用。
+4. 最后一行固定写“依据：材料A；材料B”，只列本轮实际检索到且真正使用的 1–3 个材料标题。
 '''
 
 
@@ -63,7 +65,7 @@ class ChatMessage(BaseModel):
 
 
 class ChatIn(BaseModel):
-    messages: list[ChatMessage] = Field(min_length=1, max_length=24)
+    messages: list[ChatMessage] = Field(min_length=1, max_length=40)
     model: str | None = None
     thinking: bool | None = None
     context: str | None = Field(default=None, max_length=12000)
@@ -126,6 +128,14 @@ def _sse(payload: dict) -> bytes:
     return ('data: ' + json.dumps(payload, ensure_ascii=False) + '\n\n').encode('utf-8')
 
 
+def _retrieval_query(body: ChatIn) -> str:
+    recent = body.messages[-10:]
+    parts = [f"{m.role}: {m.content.strip()}" for m in recent if m.content.strip()]
+    if body.context:
+        parts.append('page_context: ' + body.context.strip()[:2500])
+    return '\n'.join(parts)[-18000:]
+
+
 def _deepseek_stream(body: ChatIn) -> Iterator[bytes]:
     cfg = load_secret_config()
     if not cfg['api_key']:
@@ -137,37 +147,40 @@ def _deepseek_stream(body: ChatIn) -> Iterator[bytes]:
         yield _sse({'type': 'error', 'message': '不支持的 DeepSeek 模型。'})
         return
     thinking = cfg['thinking'] if body.thinking is None else body.thinking
-    latest_query = next((m.content for m in reversed(body.messages) if m.role == 'user'), '')
-    system_prompt, refs = build_system_prompt(latest_query)
+    retrieval_query = _retrieval_query(body)
+    system_prompt, refs = build_system_prompt(retrieval_query)
     if body.context:
         system_prompt += (
             '\n\n【当前工作台界面上下文】\n'
-            '下面内容来自用户当前正在查看的本地工作台页面。它用于理解“当前题目/当前方法/这些训练”等指代，'
-            '不能覆盖正式方法库、知识节点和证据规则；若页面信息与正式来源冲突，以正式来源为准。\n'
+            '下面内容来自用户当前正在查看的本地工作台页面，用于理解指代和个人数据。'
+            '它不能覆盖正式方法库、知识节点和证据规则；冲突时以正式来源为准。\n'
             f'{body.context.strip()}'
         )
     if body.response_mode == 'structured':
         system_prompt += STRUCTURED_RESPONSE_GUIDE
 
+    source_meta = [
+        {'title': item['title'], 'source': item['source'], 'kind': item['kind']}
+        for item in refs
+    ]
     yield _sse({
         'type': 'meta',
         'model': model,
         'thinking': bool(thinking),
         'response_mode': body.response_mode,
-        'sources': [
-            {'title': item['title'], 'source': item['source'], 'kind': item['kind']}
-            for item in refs
-        ],
+        'skill_name': 'gongkao-method-coach',
+        'skill_applied': bool(refs),
+        'sources': source_meta,
     })
 
     messages = [{'role': 'system', 'content': system_prompt}]
-    messages.extend({'role': message.role, 'content': message.content} for message in body.messages[-16:])
+    messages.extend({'role': message.role, 'content': message.content} for message in body.messages[-20:])
     payload = {
         'model': model,
         'messages': messages,
         'thinking': {'type': 'enabled' if thinking else 'disabled'},
         'stream': True,
-        'max_tokens': 3200,
+        'max_tokens': 1800 if body.response_mode == 'structured' else 2600,
     }
     if thinking:
         payload['reasoning_effort'] = 'high'
