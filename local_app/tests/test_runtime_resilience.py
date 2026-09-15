@@ -34,7 +34,7 @@ def test_safe_knowledge_experience_keeps_note_when_optional_stats_fail(monkeypat
 
 
 def test_chat_once_uses_nonstream_fallback_and_returns_sources(monkeypatch):
-    monkeypatch.setattr(resilience, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-v4-flash', 'thinking': False})
+    monkeypatch.setattr(resilience, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-flash', 'thinking': False})
     seen = {}
 
     def fake_chat(model, messages, api_key):
@@ -54,15 +54,15 @@ def test_chat_once_uses_nonstream_fallback_and_returns_sources(monkeypatch):
     assert response.status_code == 200, response.text
     body = response.json()
     assert body['text'] == '稳定模式回答'
-    assert body['model'] == 'deepseek-v4-flash'
+    assert body['model'] == 'deepseek-flash'
     assert isinstance(body['sources'], list)
-    assert seen['model'] == 'deepseek-v4-flash'
+    assert seen['model'] == 'deepseek-flash'
     assert seen['key'] == 'sk-test'
     assert seen['messages'][0]['role'] == 'system'
 
 
 def test_chat_once_does_not_require_history_database(monkeypatch):
-    monkeypatch.setattr(resilience, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-v4-flash', 'thinking': False})
+    monkeypatch.setattr(resilience, 'load_secret_config', lambda: {'api_key': 'sk-test', 'model': 'deepseek-flash', 'thinking': False})
     monkeypatch.setattr(resilience, '_fallback_chat_text', lambda model, messages, key: '不依赖历史表也能回答')
     response = client.post('/api/coach/chat-once', json={
         'messages': [{'role': 'user', 'content': '给我一个复盘规则'}],
