@@ -81,6 +81,7 @@ def test_runtime_regressions_are_guarded_in_react_source():
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
     methods = text('frontend/src/components/views/MethodsView.tsx')
     knowledge_block = text('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
+    workspace = text('frontend/src/components/common/WorkspaceUi.tsx')
     global_ai = text('frontend/src/components/common/GlobalAiDrawer.tsx')
     runner = text('frontend/src/components/common/PracticeRunner.tsx')
     css = text('frontend/src/index.css')
@@ -101,9 +102,11 @@ def test_runtime_regressions_are_guarded_in_react_source():
     assert '/api/v2/practice/recommendations' in trainings and '推荐训练' in trainings and '自选题目' in trainings
     assert '/api/v2/knowledge-safe/recommendations' in knowledge
     assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
-    assert 'w-full px-[clamp(14px,1.6vw,28px)]' in knowledge
-    assert 'grid-cols-[176px_minmax(0,1fr)]' in knowledge and '知识索引' in knowledge
-    assert 'md:left-[17rem]' in knowledge and 'w-[min(760px,calc(100vw-32px))]' in knowledge
+    assert 'WorkspacePage' in knowledge and 'WorkspacePage' in methods
+    assert 'w-[min(900px,calc(100vw-32px))]' in knowledge
+    assert 'grid gap-4 lg:grid-cols-[176px_minmax(0,1fr)]' in knowledge_block
+    assert '知识索引' in knowledge
+    assert 'md:left-[17rem]' in knowledge
     assert 'navOpen' in knowledge and 'toolsOpen' in knowledge
     assert '学习提示与讲法' in knowledge and '情形与扩写' in knowledge
     assert '按这个方法练 5 题' in knowledge and '复制整节' in knowledge
@@ -111,10 +114,11 @@ def test_runtime_regressions_are_guarded_in_react_source():
     assert 'study-markdown' in knowledge_block and '例题演示' in knowledge_block and '边界易错' in knowledge_block
     assert 'splitKnowledgeMarkdown' in knowledge_block and '复制本节' in knowledge_block
 
-    assert 'w-full px-[clamp(14px,1.6vw,28px)]' in methods
-    assert 'grid-cols-[170px_190px_minmax(0,1fr)]' in methods
+    assert 'w-[min(900px,calc(100vw-32px))]' in methods
+    assert '题型 / 场景' in methods
     assert '方法索引' in methods and 'directoryOpen' in methods and 'md:left-[17rem]' in methods
     assert "lg:grid-cols-[245px_300px_minmax(0,1fr)]" not in methods
+    assert 'workspace-page' in workspace and 'HeroPanel' in workspace
 
     assert '/api/coach/chat-once' in global_ai
     assert "draftModel,setDraftModel]=useState('deepseek-flash')" in global_ai
