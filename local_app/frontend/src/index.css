@@ -37,4 +37,13 @@ html[data-zen] .animate-pulse { animation: none; }
 .knowledge-reader th,.knowledge-reader td { border: 1px solid #d6d3d1; padding: 0.5rem 0.6rem; vertical-align: top; }
 .knowledge-reader th { background: #fafaf9; font-weight: 600; }
 
+/* Study blocks preserve original Markdown text while making scanning and recall easier. */
+.study-markdown > :first-child { margin-top: 0; }
+.study-markdown > :last-child { margin-bottom: 0; }
+.study-markdown p + ul,
+.study-markdown p + ol { margin-top: 0.65rem; }
+.study-markdown table tr:last-child td { border-bottom: 0; }
+.study-markdown pre { margin: 1rem 0; overflow-x: auto; border-radius: 0.75rem; background: #1c1917; padding: 0.8rem 1rem; color: #fef3c7; font-size: 0.82rem; line-height: 1.65; }
+.study-markdown pre code { background: transparent; padding: 0; color: inherit; }
+
 /* Keep this file intentionally close to Civil_gemini2; feature-specific styling stays in components. */
