@@ -79,6 +79,7 @@ def test_runtime_regressions_are_guarded_in_react_source():
     review = text('frontend/src/components/views/ReviewView.tsx')
     trainings = text('frontend/src/components/views/TrainingsView.tsx')
     knowledge = text('frontend/src/components/views/KnowledgeView.tsx')
+    methods = text('frontend/src/components/views/MethodsView.tsx')
     knowledge_block = text('frontend/src/components/knowledge/KnowledgeSectionBlock.tsx')
     global_ai = text('frontend/src/components/common/GlobalAiDrawer.tsx')
     runner = text('frontend/src/components/common/PracticeRunner.tsx')
@@ -100,14 +101,21 @@ def test_runtime_regressions_are_guarded_in_react_source():
     assert '/api/v2/practice/recommendations' in trainings and '推荐训练' in trainings and '自选题目' in trainings
     assert '/api/v2/knowledge-safe/recommendations' in knowledge
     assert '/api/knowledge/node/' in knowledge and '/reading' in knowledge
-    assert "xl:grid-cols-[270px_minmax(0,1fr)_250px]" not in knowledge
+    assert 'w-full px-[clamp(14px,1.6vw,28px)]' in knowledge
+    assert 'grid-cols-[176px_minmax(0,1fr)]' in knowledge and '知识索引' in knowledge
+    assert 'md:left-[17rem]' in knowledge and 'w-[min(760px,calc(100vw-32px))]' in knowledge
     assert 'navOpen' in knowledge and 'toolsOpen' in knowledge
-    assert 'fixed z-40 top-20 left-4' in knowledge and 'fixed z-40 top-20 right-4' in knowledge
     assert '学习提示与讲法' in knowledge and '情形与扩写' in knowledge
     assert '按这个方法练 5 题' in knowledge and '复制整节' in knowledge
     assert '30 秒考场唤醒' in knowledge and 'KnowledgeSectionBlock' in knowledge
     assert 'study-markdown' in knowledge_block and '例题演示' in knowledge_block and '边界易错' in knowledge_block
     assert 'splitKnowledgeMarkdown' in knowledge_block and '复制本节' in knowledge_block
+
+    assert 'w-full px-[clamp(14px,1.6vw,28px)]' in methods
+    assert 'grid-cols-[170px_190px_minmax(0,1fr)]' in methods
+    assert '方法索引' in methods and 'directoryOpen' in methods and 'md:left-[17rem]' in methods
+    assert "lg:grid-cols-[245px_300px_minmax(0,1fr)]" not in methods
+
     assert '/api/coach/chat-once' in global_ai
     assert "draftModel,setDraftModel]=useState('deepseek-flash')" in global_ai
     assert "jsonRequest('/api/coach/config',{method:'POST'" in global_ai
