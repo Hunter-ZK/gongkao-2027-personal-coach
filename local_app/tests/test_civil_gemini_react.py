@@ -70,7 +70,8 @@ def test_react_knowledge_is_card_based_and_methods_have_filters():
     assert '快速筛选' in methods
     assert '有考场口令' in methods and '有边界说明' in methods and '有实战例证' in methods
     assert 'normalizeKnowledgeModule' in context
-    assert "raw==='guangdong'" in context and "slug.startsWith('data-')" in context
+    assert "raw!=='guangdong'" in context and "raw!=='national'" in context
+    assert "slug.startsWith('data-')" in context and "slug.startsWith('logic-')" in context
 
 
 def test_question_ai_reparse_and_skill_sources_are_visible():
